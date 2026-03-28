@@ -1,1015 +1,357 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NeuronMap — Mind Map Interaktif</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Sora:wght@300;400;600;700&display=swap');
+import { useState, useEffect, useCallback, useRef } from "react";
 
-  :root {
-    --bg: #0a0a0f;
-    --surface: #12121a;
-    --surface2: #1a1a28;
-    --border: #2a2a3f;
-    --text: #e8e8f0;
-    --text-muted: #6b6b8a;
-    --accent: #7c6ef5;
-    --accent2: #e86bba;
-    --accent3: #5be6c4;
-    --accent4: #f0b454;
-    --glow: rgba(124,110,245,0.3);
-    --node-w: 140px;
-  }
+// ============================================================
+// DATA — COMPREHENSIVE BOOK CONTENT
+// ============================================================
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+const CHAPTERS = [
+  { id:1, title:"Seharusnya Aku Jadi Statistik", eng:"I Should Have Been a Statistic", icon:"🪞", concept:"Fondasi Kegelapan",
+    timeline:"1975–1994 • Buffalo, NY → Brazil, Indiana",
+    people:["Trunnis Goggins (ayah, pelaku kekerasan)","Jackie (ibu)","Sister Katherine (guru pertama yang peduli)","Ms. D (guru yang memusuhi)"],
+    summary:[
+      "David lahir dalam rumah tangga yang dipenuhi kekerasan brutal. Ayahnya, Trunnis Goggins, menjalankan bisnis skating rink di Buffalo, New York, dan mempekerjakan seluruh keluarganya tanpa bayaran. David mulai 'bekerja' sejak usia 6 tahun — dari sore hingga tengah malam setiap hari.",
+      "Trunnis memukul ibu David secara rutin, sering di depan anak-anaknya. Ia juga memukul David dengan sabuk, dan lingkungan rumah dipenuhi ketakutan konstan. Stres toksik yang dialami David mengakibatkan gangguan belajar, kecemasan sosial, gagap, rambut rontok, dan bercak putih di kulit.",
+      "Ibunya akhirnya melarikan diri ke Brazil, Indiana — kota kecil yang hampir seluruhnya berkulit putih. David menjadi satu-satunya anak kulit hitam di sekolahnya. Ia menghadapi rasisme setiap hari — mulai dari kata-kata hinaan hingga ancaman senjata api saat jogging.",
+      "Di sekolah, Sister Katherine adalah guru pertama yang percaya padanya dan menggunakan pengulangan sabar untuk membantunya belajar. Tapi Ms. D di Indiana ingin menyingkirkannya ke sekolah 'khusus'. David mengembangkan gagap, didiagnosa ADHD, dan stres toksiknya mempengaruhi semua aspek hidupnya.",
+    ],
+    lesson:"Setiap orang menerima 'kartu buruk' dalam hidup. Yang membedakan adalah apa yang kau lakukan dengannya. Langkah pertama menuju perubahan: AKUI seluruh kebenaran tentang hidupmu — tanpa sensor, tanpa alasan, tanpa menyalahkan. Kemudian gunakan rasa sakit itu sebagai bahan bakar.",
+    quotes:["Kau mungkin hidup hanya di 40% kapasitas sejatimu.","Aku adalah poster child dari istilah 'pemuda berisiko'. Bukan ibuku yang membesarkan penjahat. Lihat angkanya — Trunnis Goggins yang menempatkanku di jalur penghancuran.","Stres toksik lebih merusak anak-anak daripada polio atau meningitis."],
+  },
+  { id:2, title:"Kebenaran Itu Menyakitkan", eng:"Truth Hurts", icon:"💎", concept:"Accountability Mirror",
+    timeline:"1989–1994 • Brazil, Indiana",
+    people:["Wilmoth Irving (calon ayah tiri, dibunuh)","Johnny Nichols (sahabat)","Kirk Freeman (teman yang mengakui rasisme)"],
+    summary:[
+      "Wilmoth Irving membawa cahaya ke kehidupan David dan ibunya. Ia seorang tukang kayu sukses dari Indianapolis yang mengajari David bermain basket dan menjadi figur ayah pertama yang sehat. Mereka merencanakan pindah bersama.",
+      "Pada 26 Desember 1989, sehari setelah Natal, Wilmoth dibunuh — ditembak 5 kali di dada dan sekali di antara mata di garasi rumahnya sendiri. David baru kelas 4 SD. Kematian Wilmoth menghancurkan harapan keluarga.",
+      "David terus menyontek di setiap ujian untuk bertahan di sekolah. Ia tidak bisa membaca dengan benar karena stres toksik menghambat perkembangan otaknya. Saat gagal tes ASVAB militer, ia menyadari bahwa ia telah menipu dirinya sendiri selama bertahun-tahun.",
+      "Malam itu, David berdiri di cermin kamar mandi, mencukur kepalanya, dan untuk pertama kalinya berbicara jujur kepada dirinya sendiri: 'Kau bodoh! Tidak ada yang akan datang menyelamatkanmu! Ini tanggung jawabmu!' Ritual ini menjadi Cermin Akuntabilitas — Post-It notes berisi kebenaran brutal yang ditempel di cermin setiap hari.",
+    ],
+    lesson:"Cermin Akuntabilitas bukan tentang self-love. Ini tentang MENGHANCURKAN ego dan menghadapi siapa dirimu yang sebenarnya. Tulis kebenaran brutal di Post-It. Tempel di cermin nyata. Hadapi setiap pagi. Jangan lembut — kau butuh kulit yang lebih tebal.",
+    quotes:["Jika kau melihat orang gemuk di cermin, jangan bilang kau perlu menurunkan berat. Katakan yang sebenarnya — kau gemuk!","Tidak ada yang akan datang menyelamatkanmu! Bukan ibumu, bukan Wilmoth. Tidak ada! Ini tanggung jawabmu!","Kepercayaan diri yang berhasil kubangun tidak datang dari keluarga sempurna atau bakat pemberian Tuhan. Ia datang dari akuntabilitas personal."],
+  },
+  { id:3, title:"Tugas yang Mustahil", eng:"The Impossible Task", icon:"🔥", concept:"Callousing the Mind",
+    timeline:"1994–1999 • Indianapolis → Air Force → Navy SEALs",
+    people:["David (136 kg, pembasmi hama)","Recruiter Navy SEAL"],
+    summary:[
+      "Setelah keluar dari Angkatan Udara, David bekerja sebagai pembasmi hama (Ecolab) dengan berat 136 kg. Ia bekerja shift malam, menyemprot racun kecoa di restoran, memakai masker fumigasi agar tidak perlu melihat wajahnya sendiri di pantulan kaca.",
+      "Setiap malam ia pulang ke rumah, duduk di sofa, makan donat sambil menonton TV. Ia menyebut dirinya 'storm trooper murahan' — zombie yang menjual waktunya di bumi tanpa tujuan.",
+      "Suatu malam, ia menonton dokumenter tentang BUD/S (pelatihan Navy SEALs). Gambar-gambar prajurit yang menderita di air es memicu sesuatu dalam dirinya. Ia memutuskan saat itu juga: ia akan menjadi Navy SEAL.",
+      "Masalahnya MONUMENTAL: ia harus menurunkan 50 kg dalam 3 bulan, belajar berenang dari nol (ia tidak bisa berenang), dan lulus seleksi paling brutal di dunia. Recruiter tertawa di wajahnya. Tapi David melakukannya — berlari dengan celana yang dijahit kaus kaki di selangkangan agar tidak sobek.",
+    ],
+    lesson:"Keluar dari zona nyaman SECARA RUTIN. Setiap pengalaman menyakitkan yang kau hadapi dengan sengaja akan MENGERASKAN pikiranmu — seperti kapalan di tangan pekerja. Repetisi + rasa sakit = mental baja. Mulai dari hal kecil: rapikan kasur, lari 2 km, mandi air dingin.",
+    quotes:["Pikiran bisa dikeraskan seperti kapalan di tangan. Tapi pilihan ada padamu — menjadi korban atau baja.","Jika kau terus lari dengan jari kaki patah, segera kau akan bisa lari dengan kaki patah.","Kau tidak perlu motivasi. Kau butuh KEBIASAAN menghadapi rasa sakit."],
+  },
+  { id:4, title:"Mengambil Jiwa", eng:"Taking Souls", icon:"⚔️", concept:"Taking Souls",
+    timeline:"1999–2001 • BUD/S Hell Week, Coronado",
+    people:["Psycho Pete (instruktur sadis)","Bill Brown ('Freak', rekan Boat Crew Two)","SBG (instruktur yang menghormati)"],
+    summary:[
+      "Selama BUD/S (Basic Underwater Demolition/SEAL training), David ditempatkan di Boat Crew Two — kru terburuk, dijuluki 'Kru Payah'. Mereka selalu kalah, selalu dihukum, dan moral tim hancur.",
+      "Di Hell Week — 6 hari tanpa tidur di air es Samudera Pasifik — David memutuskan untuk MEMBALIK permainan. Saat instruktur Psycho Pete berteriak dan menghina, David justru TERSENYUM dan BERNYANYI tema film Platoon di tengah penderitaan.",
+      "Ia memotivasi timnya: 'Kau tahu kenapa aku memanggilmu Freak? Karena kau salah satu pria paling tangguh yang pernah kulihat!' Boat Crew Two berubah dari kru terburuk menjadi kru terbaik. Mereka melempar perahu di atas kepala sambil berteriak 'YOU CAN'T HURT BOAT CREW TWO!'",
+      "Mulut para instruktur ternganga. David telah MEREBUT JIWA mereka — mengambil energi dari musuh dan mengubahnya menjadi bahan bakar. Konsep ini bukan tentang mendominasi orang lain, tapi tentang menemukan KEUNGGULAN TAKTIS dalam pertempuranmu sendiri.",
+    ],
+    lesson:"Merebut Jiwa = menemukan keunggulan taktis. Kenali kelemahanmu DAN kelemahan lawanmu. Lampaui standar tertinggi yang diminta hingga lawanmu tidak bisa mengabaikanmu. Ini permainan mental yang kau mainkan dengan DIRIMU SENDIRI.",
+    quotes:["Segala penderitaan emosional dan fisik itu terbatas! Tersenyumlah pada rasa sakit dan saksikan ia memudar.","Saat mereka pulang ke rumah setelah shift 8 jam sementara kami masih bertempur, aku ingin mereka MEMIKIRKAN Boat Crew Two.","Mengambil jiwa seseorang berarti kau telah mendapat keunggulan taktis."],
+  },
+  { id:5, title:"Pikiran Berlapis Baja", eng:"Armored Mind", icon:"🛡️", concept:"Armored Mind / Visualisasi",
+    timeline:"2001–2004 • BUD/S (3 kali Hell Week)",
+    people:["David (3x Hell Week)","Dokter militer","Para instruktur BUD/S"],
+    summary:[
+      "David menjalani BUD/S TIGA KALI. Pertama, ia gagal karena cedera (pneumonia). Kedua, cedera lutut memaksanya berhenti. Setiap kegagalan berarti menjalani Hell Week LAGI — dan kebanyakan orang tidak sanggup sekali pun.",
+      "Di percobaan ketiga, lutunya sebesar buah jeruk bali, tapi ia menyembunyikan cedera dari dokter. Ia mengembangkan teknik visualisasi: sebelum setiap tantangan, ia membayangkan SETIAP DETAIL — bukan hanya kemenangan, tapi juga semua rasa sakit, kelelahan, dan hambatan yang akan datang.",
+      "Visualisasi Goggins berbeda dari 'positive thinking' biasa. Ia tidak hanya membayangkan piala — ia membayangkan PENDERITAAN. Ia mempersiapkan jawaban untuk pertanyaan 'mengapa?' yang pasti muncul saat di titik terendah. Ia menyebutnya 'bahan bakar gelap' — menggunakan rasa sakit masa lalu sebagai energi.",
+      "Dengan pikiran berlapis baja ini, ia akhirnya lulus BUD/S dan lulus sebagai yang terbaik di kelasnya.",
+    ],
+    lesson:"Visualisasi NYATA bukan bermimpi tentang piala. Kau harus memvisualisasikan HAMBATAN dan menentukan bagaimana menyerangnya. Siapkan jawaban untuk saat tergelap. Dan ingat: visualisasi TIDAK menggantikan kerja nyata.",
+    quotes:["Visualisasi tidak akan mengkompensasi pekerjaan yang belum dilakukan. Kau tidak bisa memvisualisasikan kebohongan.","Untuk membangun pikiran berlapis baja — mindset yang begitu keras sehingga menjadi penahan untuk segala hal — kau perlu pengulangan yang menyakitkan.","Saat otakmu berteriak berhenti, itu bukan kenyataan. Itu software pembatasmu berbicara."],
+  },
+  { id:6, title:"Bukan Soal Piala", eng:"It's Not About a Trophy", icon:"🍪", concept:"Cookie Jar",
+    timeline:"2005–2007 • Ultra-marathon pertama (Hurt 100)",
+    people:["David (pelari ultra pemula)","Karl Meltzer (pelari ultra legendaris)","Ibunya (yang selalu mengisi toples kue)"],
+    summary:[
+      "David mendaftar lari ultra-marathon 100 mil (Hurt 100 di Hawaii) tanpa persiapan yang memadai, hanya untuk mengumpulkan dana bagi Special Operations Warrior Foundation. Lari terjauhnya sebelumnya hanya 26 mil.",
+      "Di mil ke-70, tubuhnya HANCUR: kaki berdarah, patah tulang stres di kedua kaki, kuku jari copot, ia buang air di celananya. Otaknya memohon berhenti. Di Hospitality Point, ia nyaris menyerah.",
+      "Saat itulah ia menciptakan TOPLES KUE. Ia mengingat ibunya yang selalu mengisi toples kue di rumah meski mereka miskin. Ia menggunakan konsep itu — mengisi toples imajiner dengan SEMUA kemenangan masa lalunya: lulus SMA meski bodoh, menurunkan 50 kg, lulus BUD/S.",
+      "Ia secara harfiah MERASAKAN kembali emosi kemenangan itu — bukan sekadar mengingat, tapi mengakses sistem saraf simpatisnya. Adrenalin mengambil alih, rasa sakit memudar, dan ia menyelesaikan 101 mil. Setiap lap menjadi lap kemenangan yang merayakan kue yang berbeda.",
+    ],
+    lesson:"Kita semua punya Toples Kue karena hidup selalu menguji kita. Bahkan kemenangan kecil (membaca satu paragraf tanpa kesalahan, menurunkan 2 kg pertama) adalah kue yang berharga. Saat kesakitan datang, masukkan tanganmu dan RASAKAN kembali kemenangan itu.",
+    quotes:["Roket tidak menyala tanpa percikan kecil. Kemenangan kecilmu adalah kayu bakar. Nyalakan api kecil untuk membakar seluruh hutan.","Toples Kue menjadi bank energiku. Setiap kali rasa sakit tak tertahankan, aku ambil satu gigitan.","Kita tidak meluangkan waktu untuk merayakan kemenangan kita. Kita menikmatinya sesaat, tapi apakah kita pernah melihat kembali dan MERASAKAN kemenangan itu lagi dan lagi?"],
+  },
+  { id:7, title:"Senjata Paling Kuat", eng:"The Most Powerful Weapon", icon:"💪", concept:"Aturan 40% / The 40% Rule",
+    timeline:"2007–2008 • Ultra-running career",
+    people:["David","Para ilmuwan yang meneliti performa manusia"],
+    summary:[
+      "David menjelaskan konsep GOVERNOR — pembatas di dalam pikiran manusia. Seperti mobil balap yang punya pembatas kecepatan untuk mencegah mesin terbakar, otak kita punya 'software' yang mengirim sinyal rasa sakit, kelelahan, dan ketakutan untuk memaksa kita berhenti.",
+      "Perbedaannya: pembatas di mobil bisa dilepas dengan mudah (masalah hardware). Pembatas di pikiran manusia JAUH lebih rumit — ia terjalin dengan identitas kita, kenangan, ketakutan, dan kisah hidup kita. Ia menggunakan SEMUA itu untuk meyakinkan kita berhenti.",
+      "Tapi ada kabar baiknya: pembatas pikiran TIDAK punya kendali absolut. Ia tidak bisa menghentikanmu kecuali kau SETUJU untuk berhenti. Saat kau merasa sudah di batas, kau baru di 40%. Ada 60% lagi yang TERSISA.",
+      "Cara mematikan pembatas: dorong 5-10% lebih jauh setiap kali. Jangan langsung 100% — itu resep cedera. Tapi secara bertahap, minggu demi minggu, bulan demi bulan, reset baseline-mu. Dalam 20 tahun, yang mustahil akan menjadi rutinitasmu. David menerapkan ini bahkan di kerja: 40 jam/minggu = 40% effort. Ada 168 jam dalam seminggu.",
+    ],
+    lesson:"Saat otakmu bilang selesai, kau baru di 40%. Pembatas ini bisa dimatikan — tapi butuh waktu dan repetisi yang menyakitkan. Dorong 5-10% lebih jauh SETIAP kali. Reset baseline secara bertahap. Dalam jangka panjang, kau akan melampaui apa yang kau pikir mustahil.",
+    quotes:["Tubuh manusia seperti mobil balap. Di bawah kap, kita semua punya reservoir potensi yang besar dan pembatas yang menghalangi kita mencapai kecepatan maksimal.","40 jam/minggu adalah effort 40%. Ada 168 jam dalam seminggu!","Cara untuk melampaui 40% adalah mengeraskan pikiranmu, hari demi hari. Yang berarti kau harus mengejar rasa sakit seperti itu pekerjaanmu!"],
+  },
+  { id:8, title:"Bakat Tidak Diperlukan", eng:"Talent Not Required", icon:"📋", concept:"Jadwal & Disiplin Mutlak",
+    timeline:"2005–2009 • Ironman, Badwater, Ultra-racing",
+    people:["David","Chris Kostman (direktur race Badwater)","SBG (commanding officer)"],
+    summary:[
+      "David berlatih untuk dan menyelesaikan Ironman triathlon, Badwater ultramarathon (217 km melintasi Death Valley dalam suhu 54°C), dan puluhan lomba ultra — SEMUANYA sambil bertugas aktif sebagai Navy SEAL.",
+      "Rahasianya bukan bakat — ia menjadwalkan SETIAP MENIT hidupnya. Saat istrinya tidur, ia bangun jam 4 pagi untuk lari 10-16 km. Ia bersepeda 40 km ke tempat kerja. Saat istirahat makan siang, ia lari 6-10 km lagi. Pulang kerja, bersepeda 40 km lagi. Total: 200+ km per minggu.",
+      "Ia menemukan bahwa kebanyakan orang membuang 4-5 JAM per hari tanpa sadar — scrolling HP, nonton TV, ngobrol tanpa tujuan. Challenge-nya: selama 3 minggu, dokumentasikan setiap menitmu, temukan lemak yang bisa dipangkas, lalu buat jadwal optimal.",
+      "Tidak ada multitasking. Satu tugas = satu fokus = satu blok waktu. Saat kerja, 100% kerja. Saat istirahat, 100% istirahat (tidak cek email). Saat latihan, 100% latihan. Disiplin ini bukan soal bakat — siapapun bisa melakukannya.",
+    ],
+    lesson:"Bakat itu MITOS. Satu-satunya faktor terpenting adalah KERJA KERAS tanpa kompromi. Jadwalkan setiap menit dalam blok 15-30 menit. Satu tugas, satu fokus. Menangkan pagi hari — bangun sebelum fajar dan selesaikan hal terpenting sebelum dunia bangun.",
+    quotes:["Terlalu banyak dari kita jadi tukang multitask, dan itu menciptakan bangsa setengah-setengah.","Etos kerjaku adalah faktor tunggal terpenting dalam semua pencapaianku. Selebihnya sekunder.","Jika kau ingin menguasai pikiran dan mematikan pembatas, kau harus kecanduan kerja keras."],
+  },
+  { id:9, title:"Tak Biasa di Antara yang Tak Biasa", eng:"Uncommon Amongst Uncommon", icon:"🦅", concept:"Uncommon Amongst Uncommon",
+    timeline:"2004–2006 • SEAL Team Five → Ranger School → DEVGRU",
+    people:["David","OIC (Officer in Charge)","Ranger Instructor (RI)","308 tentara di Ranger School"],
+    summary:[
+      "Setelah lulus BUD/S, David TIDAK PUAS hanya menjadi Navy SEAL. Ia mengirim 7 surat permohonan (chit) untuk mengikuti Army Ranger School — sekolah kepemimpinan paling keras di militer AS. 6 ditolak. Yang ketujuh disetujui.",
+      "Di Ranger School, ia adalah SATU-SATUNYA anggota Navy di kelas 308 orang. Instruktur skeptis karena beberapa SEAL sebelumnya berhenti di tengah jalan. Tapi David menghafal Ranger Creed berbulan-bulan sebelumnya dan melafalkannya dengan sempurna di hari pertama.",
+      "Ia lulus sebagai Enlisted Honor Man — prajurit terbaik di seluruh angkatan. Sebelumnya, ia juga lolos screening DEVGRU (SEAL Team Six) — unit elite yang melaksanakan misi penangkapan Osama bin Laden. Hanya 3 dari 18 yang lolos. David salah satunya.",
+      "OIC-nya berkata: 'Goggins, kau tipe orang yang berharap jadi tawanan perang hanya untuk melihat apakah kau sanggup bertahan.' Ia benar. David selalu mencari level berikutnya karena kebesaran BUKAN status permanen — ia menguap seperti kilatan minyak di wajan panas.",
+    ],
+    lesson:"Jangan berhenti saat sudah di puncak. Saat kau sudah menjadi yang terbaik di lingkunganmu, CARI lingkungan yang lebih keras. Taruh rintangan baru di depanmu secara SENGAJA. Kebesaran yang tidak dijaga akan menguap.",
+    quotes:["Mudah jadi ikan besar di kolam kecil. Jauh lebih sulit saat kau serigala di antara serigala.","Yang tidak biasa di antara yang tidak biasa tidak istirahat!","Kebesaran bukan sesuatu yang sekali tercapai akan bertahan selamanya. Ia menguap seperti kilatan minyak di wajan panas."],
+  },
+  { id:10, title:"Pemberdayaan Kegagalan", eng:"The Empowerment of Failure", icon:"🔄", concept:"After Action Report (AAR)",
+    timeline:"2012–2013 • Rekor dunia pull-up, Today Show",
+    people:["David","Savannah Guthrie (Today Show)","Matt Lauer","Guinness Official"],
+    summary:[
+      "David mencoba memecahkan rekor dunia pull-up dalam 24 jam di acara Today Show, siaran langsung TV nasional. Targetnya: 4.020 pull-up (6 per menit, setiap menit, selama 24 jam). Ia gagal karena tangannya BERDARAH — kulit terkelupas sampai daging terlihat.",
+      "Ia mencoba LAGI beberapa bulan kemudian. Gagal LAGI — kali ini karena bar pull-up yang salah merusak tangannya lebih cepat. Kebanyakan orang akan menyerah setelah 2 kali gagal di TV nasional.",
+      "David tidak menyerah. Ia menulis After Action Report (AAR) — otopsi langsung dari kegagalannya: apa yang baik (persiapan fisik), apa yang salah (bar yang salah, kulit tangan tidak cukup kapalan), dan apa yang harus diperbaiki (ganti bar, pakai kapur tertentu, latih tangan secara spesifik).",
+      "Percobaan ketiga: 4.030 pull-up dalam 17 jam. BERHASIL. Rekor dunia. AAR adalah senjata yang mengubah kegagalan menjadi DATA — bukan akhir, tapi langkah menuju keberhasilan.",
+    ],
+    lesson:"Kegagalan adalah DATA, bukan vonis. Tulis AAR setelah setiap kegagalan: apa yang baik (selalu ada), apa yang salah, bagaimana pola pikirmu, dan yang PALING penting — apa yang bisa diperbaiki dan KAPAN kau akan mencoba lagi.",
+    quotes:["Jika kau gagal lagi, ya sudah. Terima rasa sakitnya. Ulangi langkah-langkahnya dan terus bertempur. Itulah intinya.","Hidup ini seluruhnya permainan mental. Sadari itu. Miliki itu!","Tinjauan taktis adalah bagian terakhir dan paling vital dari setiap otopsi langsung."],
+  },
+  { id:11, title:"Bagaimana Jika?", eng:"What If?", icon:"❓", concept:"Peninggalan & Panggilan Terakhir",
+    timeline:"2014–2018 • Frozen Otter, operasi jantung, refleksi akhir",
+    people:["David","Karl Meltzer (inspirasi teknik lari)","Dokter jantung"],
+    summary:[
+      "Setelah operasi jantung (ditemukan lubang di jantungnya sejak lahir yang tidak terdeteksi selama puluhan tahun!), David kembali berlomba dan memenangkan Frozen Otter — lari 100 km di salju dengan suhu minus 17°C. Ia memecahkan rekor lomba.",
+      "Di lomba itu, ia berlari dengan crampons murahan yang patah di jam pertama, kaki membeku, ruam di seluruh tubuh — tapi ia menggunakan SEMUA yang telah dipelajarinya: Cermin Akuntabilitas, Toples Kue, Aturan 40%, visualisasi, teknik yang ia pelajari dari Karl Meltzer selama bertahun-tahun.",
+      "Bab terakhir ini adalah renungan: BAGAIMANA JIKA ia tidak pernah berubah? Bagaimana jika ia tetap 136 kg, tetap jadi pembasmi hama, tidak pernah berdiri di depan cermin malam itu? Ia akan menjadi statistik — seperti yang diprediksi ilmu pengetahuan untuk anak-anak dengan masa kecil sepertinya.",
+      "Pesan terakhir David: Dari saat kau mengambil napas pertama, kau memenuhi syarat untuk mati. Tapi kau juga memenuhi syarat untuk menemukan KEHEBATANMU. Pertanyaan yang paling menghantui bukan 'bagaimana jika aku gagal?' — tapi 'BAGAIMANA JIKA AKU TIDAK PERNAH MENCOBA?'",
+    ],
+    lesson:"Jangan biarkan pertanyaan 'bagaimana jika?' menghantui sisa hidupmu. Setiap alat dalam buku ini — Cermin, Toples, 40%, Merebut Jiwa, Visualisasi, Jadwal, AAR — adalah senjata nyata yang telah diuji. Gunakan. Hidup ini satu kali.",
+    quotes:["Dari saat kau mengambil napas pertama, kau memenuhi syarat untuk mati. Kau juga memenuhi syarat untuk menemukan kehebatanmu.","Dibutuhkan 20 tahun untuk mendapat 20 tahun pengalaman.","Butuh 66 hari untuk membangun kebiasaan. Bagiku butuh jauh lebih lama. Tapi aku sampai di sana."],
+  },
+];
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Sora', sans-serif;
-    height: 100vh;
-    overflow: hidden;
-    user-select: none;
-  }
+const CHALLENGES = [
+  { num:1,t:"Inventarisasi Tangan Buruk",e:"Bad Hand",instr:"Tulis SEMUA pengalaman buruk — kekerasan, penghinaan, ketakutan, ketidakamanan. Juga tulis faktor pembatas SAAT INI. Jangan samarkan. David memperlihatkan seluruh cucian kotornya — kau juga harus.",
+    steps:["Ambil jurnal FISIK atau catatan HP","Tulis semua 'kartu buruk' masa kecil — detail, jangan sensor","Tulis semua faktor pembatas SAAT INI — siapa/apa yang menghalangi?","Tanyakan: apakah AKU SENDIRI yang menghalangi?","Berikan bentuk pada rasa sakitmu — tulis cerita lengkap","Akui dan miliki semuanya — bukan untuk menyalahkan, tapi memahami","Bagikan jika siap (sosmed: #badhand #canthurtme), atau akui secara pribadi"],tag:"#badhand #canthurtme"},
+  { num:2,t:"Cermin Akuntabilitas",e:"Accountability Mirror",instr:"Tempel Post-It NYATA di cermin kamar mandimu. Tulis insecurity, mimpi, tujuan. Pecah jadi langkah kecil. Setiap langkah = 1 Post-It. Saat tercapai, lepas dan ganti. JANGAN lembut.",
+    steps:["Beli Post-It FISIK (digital TIDAK berlaku!)","Tulis SEMUA insecurity tanpa sensor","Tulis mimpi dan tujuan besar — karir, fisik, hubungan","Pecah SETIAP tujuan jadi langkah harian kecil","Tempel di cermin kamar mandi — hadapi setiap pagi/malam","Gunakan nada KERAS — 'Kau gemuk!' bukan 'Kau perlu diet sedikit'","Saat tercapai, lepas Post-It dan ganti dengan langkah berikutnya"],tag:"#canthurtme #accountabilitymirror"},
+  { num:3,t:"Zona Ketidaknyamanan",e:"Discomfort Zone",instr:"Daftar semua hal yang kau hindari karena tidak nyaman, TERUTAMA yang kau tahu baik untukmu. Lalu LAKUKAN. Dan ulangi. Ini bukan tentang perubahan instan — ini tentang menggeser jarum sedikit demi sedikit.",
+    steps:["Tulis semua hal yang kau hindari/benci/takuti","Pilih SATU dan lakukan HARI INI — meski kecil","Ulangi besok — hal yang sama atau baru","Tingkatkan bertahap (rapikan kasur → lari 2 km → 5 km → 10 km)","Fokus pada KELEMAHAN, bukan kekuatan","Semakin sering kau tidak nyaman, semakin kuat kau","Dokumentasikan di foto/video → #discomfortzone #canthurtme"],tag:"#discomfortzone #canthurtme #impossibletask"},
+  { num:4,t:"Rebut Jiwa Mereka",e:"Taking Souls",instr:"Pilih situasi kompetitif APAPUN. Guru, bos, pelatih, klien. Lampaui JAUH standar tertinggi yang diminta. Ini bukan soal pengakuan — ini soal menguasai dirimu.",
+    steps:["Identifikasi 'lawan' — guru/bos/pelatih/kompetitor","Pelajari standar mereka — lalu LAMPAUI","Jika pelatih tidak memainkanmu: dominasi LATIHAN","Jika guru meremehkan: kerjakan tugas yang TIDAK diberikan","Jika bos tidak menghargai: datang lebih awal, pulang terakhir","Tujuan: buat mereka TIDAK BISA mengabaikanmu","Ambil energi negatif mereka dan gunakan sebagai bahan bakar"],tag:"#canthurtme #takingsouls"},
+  { num:5,t:"Bangun Pikiran Berlapis Baja",e:"Armored Mind",instr:"Visualisasikan tantangan secara DETAIL — bukan hanya piala, tapi SEMUA rasa sakit dan hambatan. Siapkan jawaban untuk 'Mengapa aku melakukan ini?' SEBELUM pertempuran dimulai.",
+    steps:["Pilih satu tujuan/rintangan besar","Visualisasikan SUKSES — rasakan emosinya setiap hari","Visualisasikan SETIAP HAMBATAN yang mungkin muncul","Buat rencana untuk skenario terburuk","Jawab: Mengapa aku di sini? Apa bahan bakar gelapku?","Kendalikan dialog internal — ganti narasi negatif","INGAT: visualisasi tanpa kerja nyata = kebohongan"],tag:"#canthurtme #armoredmind"},
+  { num:6,t:"Isi Toples Kuemu",e:"Cookie Jar",instr:"Tulis SEMUA kemenangan hidup — besar dan kecil. Termasuk rintangan yang kau atasi. RASAKAN kembali emosi kemenangan itu. Ini bank energimu.",
+    steps:["Buka jurnal — tulis setiap kemenangan yang pernah kau raih","Sertakan rintangan yang kau atasi (berhenti merokok, depresi, dll)","Sertakan kemenangan KECIL (membaca satu buku, bangun pagi 7 hari berturut)","RASAKAN kembali emosi saat menang — akses sistem sarafmu","Tetapkan target ambisius untuk latihan/kerja/belajar","Saat sakit datang: masukkan tangan, tarik satu kue, RASAKAN","Setiap kue kecil = percikan api. Cukup percikan = kebakaran hutan"],tag:"#canthurtme #cookiejar"},
+  { num:7,t:"Matikan Pembatas",e:"Remove the Governor",instr:"Saat di titik berhenti — dorong 5-10% lebih jauh. JANGAN langsung 100%. Bertahap. Reset baseline setiap minggu. Berlaku untuk SEMUA area hidup.",
+    steps:["Latihan sampai titik 'ingin berhenti' — itu pembatasmu bicara","Dorong 5-10% lebih jauh (push-up 100 → 110)","Minggu depan: 110 adalah baseline baru → 121","Terapkan di pekerjaan: 40 jam/minggu = 40% effort","Terapkan di belajar: 1 jam → 1.1 jam → terus naikkan","Win the morning — bangun sebelum fajar","20 tahun dari sekarang, yang mustahil = rutinitas harian"],tag:"#canthurtme #The40PercentRule #dontgetcomfortable"},
+  { num:8,t:"Jadwalkan Semuanya",e:"Schedule It In",instr:"Tantangan 3 MINGGU. Minggu 1: catat SETIAP menit. Minggu 2: buat jadwal optimal blok 15-30 menit. Minggu 3: sempurnakan. Temukan 4-5 jam terbuang.",
+    steps:["MINGGU 1: Dokumentasikan SETIAP menit selama 7 hari — timestamps!","Catat kapan kerja, HP, makan, olahraga, TV, ngobrol","Temukan 4-5 jam TERBUANG per hari","MINGGU 2: Buat jadwal optimal — blok 15-30 menit ketat","Satu tugas = SATU fokus. NOLKAN multitasking","Jadwalkan istirahat — saat istirahat, BENAR-BENAR istirahat","MINGGU 3: Sempurnakan, hilangkan dead space, jalani TANPA kompromi"],tag:"#canthurtme #talentnotrequired"},
+  { num:9,t:"Jadi Tidak Biasa di Antara yang Tidak Biasa",e:"Uncommon Amongst Uncommon",instr:"Jika sudah di level tinggi — JANGAN puas. Bakar rasa puas diri. Kebesaran menguap jika tidak dijaga.",
+    steps:["Evaluasi JUJUR: apakah kau sudah berhenti berkembang?","Identifikasi area di mana kau bisa lebih baik","Cari lingkungan yang LEBIH keras dan menantang","Taruh rintangan baru di depanmu SECARA SENGAJA","Pertahankan keunggulan untuk JANGKA PANJANG — bukan sprint","Jangan biarkan rekan-rekanmu yang puas menarikmu turun","Ingat: kebesaran menguap. Rebut setiap hari."],tag:"#canthurtme #uncommonamongstuncommon"},
+  { num:10,t:"Otopsi Langsung (AAR)",e:"After Action Report",instr:"Tulis AAR untuk kegagalan terbesar. Analisis dengan TANGAN — bukan digital. Apa yang baik, apa yang salah, pola pikir, dan KAPAN mencoba lagi.",
+    steps:["Tulis kegagalan secara detail DENGAN TANGAN — rasakan prosesnya","Catat SEMUA hal baik — selalu ada, cari dengan murah hati","Catat bagaimana kegagalan mempengaruhi hidupmu/hubunganmu","Analisis POLA PIKIR di setiap tahap — persiapan, eksekusi, aftermath","Buat daftar hal yang BISA diperbaiki — jujur brutal","Jadwalkan percobaan ulang SECEPATNYA — tanggal spesifik","Jika gagal lagi: TERIMA rasa sakitnya, tulis AAR baru, ULANGI"],tag:"#canthurtme #empowermentoffailure"},
+];
 
-  /* ── TOOLBAR ── */
-  #toolbar {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-    height: 56px;
-    background: rgba(10,10,15,0.92);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 8px; padding: 0 16px;
-  }
-  .brand {
-    font-family: 'Space Grotesk', sans-serif;
-    font-weight: 700; font-size: 18px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    margin-right: 12px; white-space: nowrap;
-  }
-  .sep { width: 1px; height: 28px; background: var(--border); margin: 0 4px; }
-  .btn {
-    display: flex; align-items: center; gap: 6px;
-    background: var(--surface2); border: 1px solid var(--border);
-    color: var(--text-muted); font-family: 'Sora', sans-serif;
-    font-size: 12px; font-weight: 500;
-    padding: 6px 12px; border-radius: 8px; cursor: pointer;
-    transition: all .2s; white-space: nowrap;
-  }
-  .btn:hover { background: var(--surface); color: var(--text); border-color: var(--accent); }
-  .btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .btn svg { flex-shrink: 0; }
-  .color-pick { display: flex; gap: 6px; align-items: center; margin-left: 4px; }
-  .dot {
-    width: 20px; height: 20px; border-radius: 50%; cursor: pointer;
-    border: 2px solid transparent; transition: all .2s;
-  }
-  .dot:hover, .dot.sel { border-color: #fff; transform: scale(1.2); }
-  #zoom-val {
-    font-size: 12px; color: var(--text-muted);
-    background: var(--surface2); border: 1px solid var(--border);
-    padding: 5px 10px; border-radius: 8px; min-width: 52px; text-align: center;
-  }
-  .spacer { flex: 1; }
+const TOOLS = [
+  {id:"mirror",name:"Cermin Akuntabilitas",sub:"Accountability Mirror",color:"#E63946",g:"linear-gradient(135deg,#E63946,#1D3557)",desc:"Post-It kebenaran brutal, tujuan, dan langkah harian. Hadapi setiap hari.",origin:"Bab 2 — David mencukur kepalanya di cermin kamar mandi dan untuk pertama kali memaki dirinya dengan jujur. Ritual ini membawanya dari siswa paling bodoh menjadi lulus SMA."},
+  {id:"cookie",name:"Toples Kue",sub:"Cookie Jar",color:"#F4A261",g:"linear-gradient(135deg,#F4A261,#E76F51)",desc:"Bank energi dari kemenangan masa lalu. Ambil saat di titik terendah.",origin:"Bab 6 — Di mil ke-70 dengan kaki berdarah dan tulang patah, David menciptakan konsep ini dan menyelesaikan 101 mil."},
+  {id:"forty",name:"Aturan 40%",sub:"The 40% Rule",color:"#2A9D8F",g:"linear-gradient(135deg,#2A9D8F,#264653)",desc:"Lacak pembatas. Buktikan ada 60% tersisa.",origin:"Bab 7 — Otak punya 'governor'. Saat otakmu bilang selesai, kau baru di 40%."},
+  {id:"souls",name:"Merebut Jiwa",sub:"Taking Souls",color:"#9B2335",g:"linear-gradient(135deg,#9B2335,#2B2D42)",desc:"Analisis taktis — kelemahan, keunggulan, rencana tempur.",origin:"Bab 4 — Boat Crew Two berubah dari kru terburuk menjadi terbaik di Hell Week."},
+  {id:"callous",name:"Pengerasan Mental",sub:"Callousing the Mind",color:"#6B705C",g:"linear-gradient(135deg,#6B705C,#3A3A3A)",desc:"Ulangi hal sulit. Level: LEMBUT → TITANIUM.",origin:"Bab 3 — Seperti kapalan di tangan pekerja, pikiran mengeras melalui repetisi yang menyakitkan."},
+  {id:"schedule",name:"Jadwal Tak Kenal Ampun",sub:"Ruthless Schedule",color:"#457B9D",g:"linear-gradient(135deg,#457B9D,#1D3557)",desc:"Blok 15-30 menit. Satu tugas, satu fokus total.",origin:"Bab 8 — David menjadwalkan setiap menit: lari jam 4 pagi, bersepeda 40 km ke kerja, lari saat istirahat."},
+  {id:"viz",name:"Visualisasi Pertempuran",sub:"Battle Visualization",color:"#8338EC",g:"linear-gradient(135deg,#8338EC,#3A0CA3)",desc:"Bayangkan kemenangan DAN hambatan. Siapkan jawaban.",origin:"Bab 5 — David memvisualisasikan detail sebelum setiap tantangan, termasuk rasa sakit."},
+  {id:"aar",name:"Otopsi Kegagalan",sub:"After Action Report",color:"#E07A5F",g:"linear-gradient(135deg,#E07A5F,#81171B)",desc:"Analisis brutal. Apa yang baik, salah, diperbaiki.",origin:"Bab 10 — 3x gagal rekor pull-up → AAR → 4.030 pull-up dalam 17 jam."},
+];
 
-  /* ── CANVAS ── */
-  #canvas-wrap {
-    position: fixed; inset: 56px 0 0 0; overflow: hidden;
-  }
-  #canvas {
-    position: absolute; top: 0; left: 0;
-    width: 4000px; height: 3000px;
-    transform-origin: 0 0;
-    cursor: grab;
-  }
-  #canvas.panning { cursor: grabbing; }
-  #canvas.linking { cursor: crosshair; }
+const FACTS=["Menurunkan 50 kg dalam 3 bulan","3x Hell Week (6 hari tanpa tidur di air es)","101 mil pertama tanpa latihan memadai","Rekor dunia: 4.030 pull-up dalam 17 jam","Badwater 135: 217 km di Death Valley (54°C)","Satu-satunya Navy SEAL + Army Ranger + Air Force TACP","60+ ultra-marathon dan triathlon","Lari dengan kaki patah (stress fractures)","Enlisted Honor Man — Ranger School","DEVGRU (SEAL Team Six) screening: 3 dari 18 lolos","Ditemukan lubang di jantung setelah puluhan tahun","Memenangkan Frozen Otter: 100 km di salju -17°C"];
 
-  svg#lines {
-    position: absolute; top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none; overflow: visible;
-  }
+const inp={width:"100%",boxSizing:"border-box",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",color:"#fff",padding:"12px 16px",fontFamily:"'DM Sans',sans-serif",fontSize:14,outline:"none",borderRadius:0};
 
-  /* ── NODES ── */
-  .node {
-    position: absolute;
-    min-width: 120px; max-width: 220px;
-    background: var(--surface);
-    border: 2px solid var(--border);
-    border-radius: 16px;
-    padding: 12px 16px;
-    cursor: pointer;
-    transition: box-shadow .2s, border-color .2s, transform .15s;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-  }
-  .node:hover { transform: scale(1.03); }
-  .node.selected {
-    border-color: var(--accent) !important;
-    box-shadow: 0 0 0 3px var(--glow), 0 4px 24px rgba(0,0,0,.6);
-  }
-  .node.root {
-    border-radius: 20px;
-    padding: 14px 20px;
-    font-size: 16px; font-weight: 700;
-  }
-  .node-label {
-    font-size: 13px; font-weight: 500;
-    line-height: 1.4; word-break: break-word;
-    outline: none; min-width: 1px;
-    color: var(--text);
-  }
-  .node-label:empty::before { content: attr(data-ph); color: var(--text-muted); }
-  .node-emoji { font-size: 20px; margin-bottom: 4px; display: block; }
-  .node-tag {
-    display: inline-block; margin-top: 6px;
-    font-size: 10px; padding: 2px 8px; border-radius: 20px;
-    background: rgba(255,255,255,0.08); color: var(--text-muted);
-  }
+// ============================================================
+// COMPONENTS
+// ============================================================
 
-  /* node resize handle */
-  .resize-h {
-    position: absolute; bottom: 4px; right: 4px;
-    width: 12px; height: 12px; cursor: se-resize;
-    opacity: 0; transition: opacity .2s;
-  }
-  .node:hover .resize-h { opacity: .5; }
-  .resize-h::after {
-    content: '';
-    position: absolute; bottom: 0; right: 0;
-    width: 8px; height: 8px;
-    border-right: 2px solid var(--text-muted);
-    border-bottom: 2px solid var(--text-muted);
-    border-radius: 1px;
-  }
+function Nav({p,go}){
+  const items=[{id:"home",l:"BERANDA",i:"⬡"},{id:"ch",l:"BAB",i:"▣"},{id:"tools",l:"ALAT",i:"⚙"},{id:"miss",l:"MISI",i:"⚡"},{id:"jrnl",l:"JURNAL",i:"✎"},{id:"stats",l:"DATA",i:"◈"}];
+  return(<nav style={{position:"fixed",bottom:0,left:0,right:0,zIndex:100,background:"rgba(8,8,10,0.97)",backdropFilter:"blur(20px)",borderTop:"1px solid rgba(230,57,70,0.12)",display:"flex",justifyContent:"space-around",padding:"5px 0 max(5px,env(safe-area-inset-bottom))"}}>
+    {items.map(it=>(<button key={it.id} onClick={()=>go(it.id)} style={{background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:1,color:p===it.id?"#E63946":"rgba(255,255,255,0.25)",fontSize:9,fontFamily:"'Bebas Neue',sans-serif",letterSpacing:1.5,padding:"4px 2px",transition:"color 0.2s"}}><span style={{fontSize:16,lineHeight:1}}>{it.i}</span><span>{it.l}</span></button>))}
+  </nav>);
+}
 
-  /* ── LINK PREVIEW ── */
-  #link-line {
-    position: absolute; pointer-events: none;
-    top:0;left:0;width:100%;height:100%;
-    overflow: visible;
-  }
+function SH({tag,title,sub}){return(<div style={{marginBottom:24}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:11,color:"#E63946",letterSpacing:5,marginBottom:6}}>{tag}</div><h2 style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"clamp(26px,7vw,38px)",color:"#fff",margin:0,lineHeight:1}}>{title}</h2>{sub&&<p style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"rgba(255,255,255,0.35)",marginTop:8,lineHeight:1.6}}>{sub}</p>}</div>);}
 
-  /* ── CONTEXT MENU ── */
-  #ctx-menu {
-    position: fixed; z-index: 200;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px; padding: 6px;
-    min-width: 180px;
-    box-shadow: 0 8px 32px rgba(0,0,0,.6);
-    display: none;
-  }
-  #ctx-menu.show { display: block; }
-  .ctx-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px 12px; border-radius: 8px;
-    font-size: 13px; cursor: pointer; color: var(--text-muted);
-    transition: all .15s;
-  }
-  .ctx-item:hover { background: var(--surface2); color: var(--text); }
-  .ctx-item.danger:hover { background: rgba(255,80,80,.1); color: #ff6060; }
-  .ctx-sep { height: 1px; background: var(--border); margin: 4px 0; }
+function Quote({text,color}){return(<div style={{padding:"14px 16px",background:`${color||"#E63946"}08`,borderLeft:`3px solid ${color||"#E63946"}30`,marginBottom:12}}><div style={{fontFamily:"'Libre Baskerville',serif",fontSize:13,color:"rgba(255,255,255,0.5)",fontStyle:"italic",lineHeight:1.7}}>"{text}"</div></div>);}
 
-  /* ── SIDE PANEL ── */
-  #panel {
-    position: fixed; right: -300px; top: 56px; bottom: 0; width: 280px;
-    background: var(--surface);
-    border-left: 1px solid var(--border);
-    padding: 20px 16px;
-    transition: right .3s cubic-bezier(.4,0,.2,1);
-    overflow-y: auto; z-index: 90;
-  }
-  #panel.open { right: 0; }
-  .panel-title { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 12px; }
-  .panel-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-  .panel-label { font-size: 12px; color: var(--text-muted); min-width: 60px; }
-  input[type=text], input[type=range], select, textarea {
-    background: var(--surface2); border: 1px solid var(--border);
-    color: var(--text); font-family: 'Sora', sans-serif; font-size: 12px;
-    border-radius: 8px; outline: none;
-  }
-  input[type=text], select { padding: 6px 10px; width: 100%; }
-  input[type=text]:focus, select:focus { border-color: var(--accent); }
-  textarea { padding: 8px 10px; width: 100%; resize: vertical; min-height: 60px; }
-  input[type=range] { width: 100%; accent-color: var(--accent); }
-  .color-row { display: flex; flex-wrap: wrap; gap: 6px; }
-  .c-swatch {
-    width: 26px; height: 26px; border-radius: 8px; cursor: pointer;
-    border: 2px solid transparent; transition: all .15s; flex-shrink: 0;
-  }
-  .c-swatch.active { border-color: #fff; }
-
-  /* ── MINI MAP ── */
-  #minimap {
-    position: fixed; bottom: 16px; right: 16px; z-index: 90;
-    width: 160px; height: 100px;
-    background: rgba(10,10,15,.85);
-    border: 1px solid var(--border);
-    border-radius: 10px; overflow: hidden;
-    backdrop-filter: blur(10px);
-  }
-  #minimap canvas { width: 100%; height: 100%; }
-
-  /* ── TOAST ── */
-  #toast {
-    position: fixed; bottom: 130px; left: 50%; transform: translateX(-50%);
-    background: var(--accent); color: #fff;
-    padding: 8px 20px; border-radius: 20px;
-    font-size: 13px; font-weight: 500;
-    opacity: 0; pointer-events: none; transition: opacity .3s;
-    white-space: nowrap; z-index: 300;
-  }
-  #toast.show { opacity: 1; }
-
-  /* ── HELP ── */
-  #help {
-    position: fixed; bottom: 16px; left: 16px; z-index: 90;
-    background: rgba(10,10,15,.85); border: 1px solid var(--border);
-    border-radius: 10px; padding: 10px 14px;
-    font-size: 11px; color: var(--text-muted); line-height: 1.8;
-    backdrop-filter: blur(10px);
-  }
-  kbd {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 4px; padding: 1px 5px; font-size: 10px;
-  }
-
-  /* Animated SVG lines */
-  .conn-line {
-    fill: none; stroke-width: 2;
-    stroke-linecap: round; stroke-linejoin: round;
-    opacity: .7;
-    stroke-dasharray: 1000; stroke-dashoffset: 1000;
-    animation: drawLine .6s ease forwards;
-  }
-  @keyframes drawLine { to { stroke-dashoffset: 0; } }
-
-  .node-enter { animation: nodeIn .25s cubic-bezier(.34,1.56,.64,1) forwards; }
-  @keyframes nodeIn { from { opacity:0; transform: scale(.6); } to { opacity:1; transform: scale(1); } }
-
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-</style>
-</head>
-<body>
-
-<!-- TOOLBAR -->
-<div id="toolbar">
-  <span class="brand">⬡ NeuronMap</span>
-  <div class="sep"></div>
-  <button class="btn" id="btn-add" title="Tambah Node (N)">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-    Node
-  </button>
-  <button class="btn" id="btn-link" title="Mode Hubungkan (L)">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-    Hubungkan
-  </button>
-  <button class="btn" id="btn-del" title="Hapus Pilihan (Del)">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6l-1 14H6L5 6M9 6V4h6v2"/></svg>
-    Hapus
-  </button>
-  <div class="sep"></div>
-  <button class="btn" id="btn-auto" title="Auto Layout">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-    Auto Layout
-  </button>
-  <button class="btn" id="btn-fit">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-    Fit
-  </button>
-  <div class="sep"></div>
-  <button class="btn" id="btn-zoom-out">－</button>
-  <span id="zoom-val">100%</span>
-  <button class="btn" id="btn-zoom-in">＋</button>
-  <div class="sep"></div>
-  <div class="color-pick" title="Warna node baru">
-    <span style="font-size:11px;color:var(--text-muted);">Warna:</span>
-    <div class="dot sel" style="background:#7c6ef5" data-c="#7c6ef5"></div>
-    <div class="dot" style="background:#e86bba" data-c="#e86bba"></div>
-    <div class="dot" style="background:#5be6c4" data-c="#5be6c4"></div>
-    <div class="dot" style="background:#f0b454" data-c="#f0b454"></div>
-    <div class="dot" style="background:#ff7070" data-c="#ff7070"></div>
-    <div class="dot" style="background:#60b4ff" data-c="#60b4ff"></div>
-  </div>
-  <div class="spacer"></div>
-  <button class="btn" id="btn-panel">✦ Edit Panel</button>
-  <button class="btn" id="btn-export">⬇ Export PNG</button>
-  <button class="btn" id="btn-clear">↺ Reset</button>
-</div>
-
-<!-- CANVAS -->
-<div id="canvas-wrap">
-  <div id="canvas">
-    <svg id="lines" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <filter id="glow-filter">
-          <feGaussianBlur stdDeviation="3" result="blur"/>
-          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-      </defs>
-    </svg>
-  </div>
-</div>
-
-<!-- SIDE PANEL -->
-<div id="panel">
-  <div class="panel-title">✦ Edit Node</div>
-  <div id="panel-empty" style="color:var(--text-muted);font-size:12px;margin-top:8px;">Pilih node untuk mengedit</div>
-  <div id="panel-form" style="display:none;">
-    <div class="panel-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
-      <div class="panel-label">Label</div>
-      <input type="text" id="p-label" placeholder="Judul node...">
-    </div>
-    <div class="panel-row" style="flex-direction:column;align-items:flex-start;gap:6px;margin-top:6px;">
-      <div class="panel-label">Catatan</div>
-      <textarea id="p-note" placeholder="Catatan / detail..."></textarea>
-    </div>
-    <div class="panel-row" style="flex-direction:column;align-items:flex-start;gap:6px;margin-top:6px;">
-      <div class="panel-label">Emoji</div>
-      <input type="text" id="p-emoji" placeholder="🧠" style="width:60px;">
-    </div>
-    <div class="panel-row" style="flex-direction:column;align-items:flex-start;gap:6px;margin-top:6px;">
-      <div class="panel-label">Tag</div>
-      <input type="text" id="p-tag" placeholder="e.g. Penting">
-    </div>
-    <div style="margin-top:12px;">
-      <div class="panel-title">Warna Node</div>
-      <div class="color-row" id="p-colors"></div>
-    </div>
-    <div style="margin-top:12px;">
-      <div class="panel-title">Ukuran Font</div>
-      <div class="panel-row">
-        <input type="range" id="p-fontsize" min="10" max="22" value="13" style="flex:1;">
-        <span id="p-fontsize-val" style="font-size:12px;color:var(--text-muted);min-width:28px;">13px</span>
+// HOME
+function Home({go}){
+  const[fi,setFi]=useState(0);
+  useEffect(()=>{const t=setInterval(()=>setFi(i=>(i+1)%FACTS.length),4000);return()=>clearInterval(t)},[]);
+  return(<div style={{padding:"0 0 100px"}}>
+    <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",padding:"60px 20px",textAlign:"center",position:"relative",background:"radial-gradient(ellipse at 25% 15%,rgba(230,57,70,0.12) 0%,transparent 55%),radial-gradient(ellipse at 75% 85%,rgba(42,157,143,0.06) 0%,transparent 45%)"}}>
+      <div style={{position:"absolute",inset:0,opacity:0.025,backgroundImage:"repeating-linear-gradient(0deg,transparent,transparent 80px,#E63946 80px,#E63946 81px),repeating-linear-gradient(90deg,transparent,transparent 80px,#E63946 80px,#E63946 81px)",pointerEvents:"none"}}/>
+      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"clamp(11px,2.5vw,14px)",color:"#E63946",letterSpacing:8,marginBottom:20}}>DAVID GOGGINS</div>
+      <h1 style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"clamp(52px,14vw,110px)",lineHeight:0.85,color:"#fff",margin:"0 0 12px",letterSpacing:-2,textShadow:"0 0 120px rgba(230,57,70,0.2)"}}>CAN'T<br/>HURT ME</h1>
+      <div style={{fontFamily:"'Libre Baskerville',serif",fontSize:"clamp(11px,2.2vw,14px)",color:"rgba(255,255,255,0.35)",maxWidth:420,fontStyle:"italic",lineHeight:1.7,marginBottom:40}}>Kuasai Pikiranmu & Tantang Segala Kemustahilan</div>
+      <div style={{width:1,height:50,background:"linear-gradient(to bottom,#E63946,transparent)",margin:"0 auto 24px"}}/>
+      <p style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"rgba(255,255,255,0.45)",maxWidth:520,lineHeight:1.8,marginBottom:32}}>Aplikasi komprehensif dengan <strong style={{color:"#E63946"}}>11 bab</strong> (ringkasan multi-paragraf, karakter, timeline, 3+ kutipan per bab), <strong style={{color:"#F4A261"}}>10 tantangan</strong> dengan 7 langkah detail, dan <strong style={{color:"#2A9D8F"}}>8 alat mental</strong> interaktif — semuanya diambil langsung dari buku.</p>
+      <div style={{display:"flex",gap:12,flexWrap:"wrap",justifyContent:"center",marginBottom:50}}>
+        <button onClick={()=>go("ch")} style={{background:"#E63946",color:"#fff",border:"none",padding:"15px 36px",fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:4,cursor:"pointer"}}>MULAI PERJALANAN</button>
+        <button onClick={()=>go("tools")} style={{background:"transparent",color:"#E63946",border:"1px solid rgba(230,57,70,0.4)",padding:"15px 36px",fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:4,cursor:"pointer"}}>BUKA ARSENAL</button>
       </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:16,maxWidth:480,width:"100%"}}>{[{n:"11",l:"BAB"},{n:"10",l:"MISI"},{n:"8",l:"ALAT"},{n:"∞",l:"POTENSI"}].map((s,i)=>(<div key={i} style={{textAlign:"center"}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"clamp(28px,6vw,40px)",color:i===3?"#2A9D8F":"#E63946",lineHeight:1}}>{s.n}</div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:10,color:"rgba(255,255,255,0.25)",letterSpacing:3}}>{s.l}</div></div>))}</div>
     </div>
-    <div style="margin-top:12px;">
-      <div class="panel-title">Border Radius</div>
-      <div class="panel-row">
-        <input type="range" id="p-radius" min="4" max="40" value="16" style="flex:1;">
-        <span id="p-radius-val" style="font-size:12px;color:var(--text-muted);min-width:28px;">16px</span>
-      </div>
+    <div style={{padding:"20px",background:"rgba(230,57,70,0.05)",borderTop:"1px solid rgba(230,57,70,0.08)",borderBottom:"1px solid rgba(230,57,70,0.08)"}}>
+      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:10,color:"#E63946",letterSpacing:4,marginBottom:6}}>FAKTA GOGGINS #{fi+1}</div>
+      <div key={fi} style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"rgba(255,255,255,0.65)",lineHeight:1.6}}>{FACTS[fi]}</div>
     </div>
-    <div style="margin-top:12px;">
-      <div class="panel-title">Opasitas</div>
-      <div class="panel-row">
-        <input type="range" id="p-opacity" min="30" max="100" value="100" style="flex:1;">
-        <span id="p-opacity-val" style="font-size:12px;color:var(--text-muted);min-width:28px;">100%</span>
-      </div>
+    <div style={{padding:"40px 20px",maxWidth:500,margin:"0 auto",textAlign:"center"}}>
+      <div style={{fontFamily:"'Libre Baskerville',serif",fontSize:14,color:"rgba(255,255,255,0.5)",lineHeight:1.8,fontStyle:"italic"}}>"Dari saat kau mengambil napas pertama, kau memenuhi syarat untuk mati. Kau juga memenuhi syarat untuk menemukan kehebatanmu."</div>
+      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:11,color:"#E63946",letterSpacing:4,marginTop:12}}>— DAVID GOGGINS</div>
     </div>
-    <button class="btn active" id="p-apply" style="width:100%;justify-content:center;margin-top:16px;">Terapkan</button>
-  </div>
-</div>
-
-<!-- CONTEXT MENU -->
-<div id="ctx-menu">
-  <div class="ctx-item" id="ctx-add-child">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-    Tambah Cabang
-  </div>
-  <div class="ctx-item" id="ctx-dupe">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-    Duplikat
-  </div>
-  <div class="ctx-sep"></div>
-  <div class="ctx-item" id="ctx-edit">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-    Edit Label
-  </div>
-  <div class="ctx-item danger" id="ctx-del">
-    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6l-1 14H6L5 6M9 6V4h6v2"/></svg>
-    Hapus Node
-  </div>
-</div>
-
-<!-- MINIMAP -->
-<div id="minimap"><canvas id="mm-canvas"></canvas></div>
-
-<!-- TOAST -->
-<div id="toast">Node ditambahkan!</div>
-
-<!-- HELP -->
-<div id="help">
-  <b style="color:var(--text);font-size:12px;">Pintasan</b><br>
-  <kbd>N</kbd> Node baru &nbsp; <kbd>L</kbd> Mode link<br>
-  <kbd>Del</kbd> Hapus &nbsp; <kbd>Esc</kbd> Batal<br>
-  <kbd>Scroll</kbd> Zoom &nbsp; <kbd>Drag</kbd> Pindah<br>
-  <kbd>Dbl-click</kbd> Edit label
-</div>
-
-<script>
-// ═══════════════════════════════════════════════════════
-//  STATE
-// ═══════════════════════════════════════════════════════
-const state = {
-  nodes: [],
-  edges: [],
-  selectedId: null,
-  linkMode: false,
-  linkFrom: null,
-  pan: { x: 0, y: 0 },
-  zoom: 1,
-  dragging: null,
-  dragOffset: { x: 0, y: 0 },
-  panning: false,
-  panStart: null,
-  panFrom: null,
-  activeColor: '#7c6ef5',
-  idCounter: 0,
-};
-
-const COLORS = ['#7c6ef5','#e86bba','#5be6c4','#f0b454','#ff7070','#60b4ff','#a8ff78','#ff9f43'];
-
-const canvas = document.getElementById('canvas');
-const svgLines = document.getElementById('lines');
-const wrap = document.getElementById('canvas-wrap');
-
-// ═══════════════════════════════════════════════════════
-//  HELPERS
-// ═══════════════════════════════════════════════════════
-function uid() { return 'n' + (++state.idCounter); }
-
-function toast(msg, dur=1800) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  clearTimeout(t._t);
-  t._t = setTimeout(() => t.classList.remove('show'), dur);
+  </div>);
 }
 
-function hexAlpha(hex, a) {
-  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
-  return `rgba(${r},${g},${b},${a})`;
+// CHAPTERS — MUCH MORE DETAILED
+function Chs(){
+  const[open,setOpen]=useState(null);
+  return(<div style={{padding:"30px 16px 100px",maxWidth:660,margin:"0 auto"}}>
+    <SH tag="PETA PERJALANAN" title="11 Bab Kehidupan" sub="Setiap bab berisi ringkasan multi-paragraf, karakter kunci, timeline, pelajaran, dan 3 kutipan langsung."/>
+    {CHAPTERS.map(ch=>(<div key={ch.id} style={{marginBottom:8}}>
+      <button onClick={()=>setOpen(open===ch.id?null:ch.id)} style={{width:"100%",textAlign:"left",display:"flex",gap:14,padding:16,background:open===ch.id?"rgba(230,57,70,0.08)":"rgba(255,255,255,0.02)",border:`1px solid ${open===ch.id?"rgba(230,57,70,0.2)":"rgba(255,255,255,0.05)"}`,cursor:"pointer",alignItems:"flex-start",transition:"all 0.3s"}}>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,color:"rgba(230,57,70,0.2)",minWidth:36,textAlign:"right",lineHeight:1,paddingTop:2}}>{String(ch.id).padStart(2,"0")}</div>
+        <div style={{flex:1}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,color:"#fff",letterSpacing:0.5,lineHeight:1.2}}>{ch.icon} {ch.title}</div>
+        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"rgba(255,255,255,0.25)",marginTop:3}}>{ch.eng} — {ch.concept}</div>
+        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:10,color:"rgba(255,255,255,0.15)",marginTop:2}}>{ch.timeline}</div></div>
+        <span style={{color:"rgba(255,255,255,0.15)",fontSize:16,transition:"transform 0.3s",transform:open===ch.id?"rotate(90deg)":"rotate(0)"}}>▸</span>
+      </button>
+      {open===ch.id&&(<div style={{padding:"20px 16px 20px 66px",background:"rgba(0,0,0,0.3)",borderLeft:"2px solid #E63946"}}>
+        {/* People */}
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:10,color:"#457B9D",letterSpacing:3,marginBottom:6}}>KARAKTER KUNCI</div>
+        <div style={{marginBottom:14}}>{ch.people.map((p,i)=>(<span key={i} style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"rgba(255,255,255,0.4)",marginRight:12,display:"inline-block",marginBottom:4}}>• {p}</span>))}</div>
+        {/* Summary paragraphs */}
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:10,color:"#E63946",letterSpacing:3,marginBottom:8}}>RINGKASAN DETAIL</div>
+        {ch.summary.map((p,i)=>(<p key={i} style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"rgba(255,255,255,0.6)",lineHeight:1.8,margin:"0 0 12px"}}>{p}</p>))}
+        {/* Lesson */}
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:10,color:"#2A9D8F",letterSpacing:3,marginTop:16,marginBottom:8}}>PELAJARAN UTAMA</div>
+        <p style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"rgba(255,255,255,0.6)",lineHeight:1.8,margin:"0 0 16px"}}>{ch.lesson}</p>
+        {/* Quotes */}
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:10,color:"#F4A261",letterSpacing:3,marginBottom:8}}>KUTIPAN ({ch.quotes.length})</div>
+        {ch.quotes.map((q,i)=>(<Quote key={i} text={q} color={i===0?"#E63946":i===1?"#2A9D8F":"#F4A261"}/>))}
+      </div>)}
+    </div>))}
+  </div>);
 }
 
-// ═══════════════════════════════════════════════════════
-//  NODE CREATION
-// ═══════════════════════════════════════════════════════
-function createNode({ id, x, y, label, color, emoji='', note='', tag='', fontSize=13, radius=16, opacity=100, isRoot=false }) {
-  const el = document.createElement('div');
-  el.className = 'node node-enter' + (isRoot ? ' root' : '');
-  el.id = id;
-  el.style.left = x + 'px';
-  el.style.top  = y + 'px';
-  el.style.borderColor = hexAlpha(color, .5);
-  el.style.background = hexAlpha(color, .12);
-  el.style.borderRadius = radius + 'px';
-  el.style.opacity = opacity/100;
-  el.style.boxShadow = `0 0 20px ${hexAlpha(color,.15)}, 0 4px 20px rgba(0,0,0,.5)`;
+// TOOLS — Each with full interactive features
+function usePersist(key,init){const[v,setV]=useState(()=>{try{return JSON.parse(localStorage.getItem(key)||JSON.stringify(init))}catch{return init}});const save=useCallback(n=>{setV(n);try{localStorage.setItem(key,JSON.stringify(n))}catch{}},[key]);return[v,save];}
 
-  const rh = document.createElement('div');
-  rh.className = 'resize-h'; el.appendChild(rh);
+function MirrorT(){const[notes,save]=usePersist("__m4",[]);const[input,setI]=useState("");const[cat,setCat]=useState("kelemahan");const add=()=>{if(!input.trim())return;save([...notes,{t:input.trim(),c:cat,d:false,dt:new Date().toLocaleDateString("id-ID")}]);setI("")};const cats={kelemahan:{l:"Kelemahan",c:"#E63946"},tujuan:{l:"Tujuan",c:"#2A9D8F"},langkah:{l:"Langkah Harian",c:"#457B9D"},kebenaran:{l:"Kebenaran Brutal",c:"#F4A261"}};
+return(<div><Quote text="Jika kau melihat orang gemuk di cermin, jangan bilang kau perlu menurunkan berat. Katakan yang sebenarnya — kau gemuk!" color="#E63946"/>
+<p style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"rgba(255,255,255,0.45)",lineHeight:1.7,marginBottom:20}}>Berdiri di depan cermin nyata. Tulis kebenaran brutal tentang kelemahan, tujuan besar, langkah harian, dan kebenaran yang kau hindari. Hadapi setiap hari tanpa ampun.</p>
+<div style={{display:"flex",gap:5,marginBottom:12,flexWrap:"wrap"}}>{Object.entries(cats).map(([k,v])=>(<button key={k} onClick={()=>setCat(k)} style={{background:cat===k?v.c:"transparent",border:`1px solid ${cat===k?v.c:"rgba(255,255,255,0.1)"}`,color:cat===k?"#fff":"rgba(255,255,255,0.35)",padding:"5px 12px",fontFamily:"'Bebas Neue',sans-serif",fontSize:10,letterSpacing:2,cursor:"pointer"}}>{v.l}</button>))}</div>
+<div style={{display:"flex",gap:8,marginBottom:20}}><input value={input} onChange={e=>setI(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} placeholder={`Tulis ${cats[cat].l.toLowerCase()}mu...`} style={{...inp,flex:1}}/><button onClick={add} style={{background:cats[cat].c,color:"#fff",border:"none",padding:"12px 20px",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:2,cursor:"pointer",fontSize:13}}>+</button></div>
+{Object.entries(cats).map(([k,v])=>{const f=notes.filter(n=>n.c===k);if(!f.length)return null;return(<div key={k} style={{marginBottom:20}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:10,color:v.c,letterSpacing:3,marginBottom:6}}>{v.l.toUpperCase()} ({f.length})</div>{f.map((n,i)=>{const idx=notes.indexOf(n);return(<div key={i} style={{display:"flex",gap:10,alignItems:"center",padding:"10px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}><button onClick={()=>{const a=[...notes];a[idx].d=!a[idx].d;save(a)}} style={{width:20,height:20,border:n.d?"none":`1px solid ${v.c}40`,background:n.d?v.c:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:11,flexShrink:0}}>{n.d?"✓":""}</button><div style={{flex:1}}><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:n.d?"rgba(255,255,255,0.2)":"#fff",textDecoration:n.d?"line-through":"none"}}>{n.t}</div><div style={{fontSize:10,color:"rgba(255,255,255,0.12)",marginTop:2}}>{n.dt}</div></div><button onClick={()=>save(notes.filter((_,j)=>j!==idx))} style={{background:"none",border:"none",color:"rgba(255,255,255,0.12)",cursor:"pointer"}}>×</button></div>)})}</div>)})}
+{!notes.length&&<div style={{textAlign:"center",padding:40,color:"rgba(255,255,255,0.08)",fontFamily:"'DM Sans',sans-serif",fontSize:13}}>Cerminmu masih kosong. Mulai jujur.</div>}</div>);}
 
-  if (emoji) {
-    const em = document.createElement('span');
-    em.className = 'node-emoji'; em.textContent = emoji;
-    el.appendChild(em);
-  }
-  const lbl = document.createElement('div');
-  lbl.className = 'node-label';
-  lbl.dataset.ph = 'Klik untuk edit...';
-  lbl.contentEditable = 'false';
-  lbl.style.fontSize = fontSize + 'px';
-  lbl.textContent = label;
-  el.appendChild(lbl);
+function CookieT(){const[cookies,save]=usePersist("__c4",[]);const[input,setI]=useState("");const[size,setS]=useState("sedang");const[show,setShow]=useState(null);const add=()=>{if(!input.trim())return;save([{t:input.trim(),s:size,dt:new Date().toLocaleDateString("id-ID")},...cookies]);setI("")};const grab=()=>{if(!cookies.length)return;setShow(cookies[Math.floor(Math.random()*cookies.length)])};const sm={kecil:{e:"🍪",c:"#E9C46A"},sedang:{e:"🍪🍪",c:"#F4A261"},besar:{e:"🍪🍪🍪",c:"#E76F51"}};
+return(<div><Quote text="Roket tidak menyala tanpa percikan kecil. Kemenangan kecilmu adalah kayu bakar. Nyalakan api kecil untuk membakar seluruh hutan." color="#F4A261"/>
+<p style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"rgba(255,255,255,0.45)",lineHeight:1.7,marginBottom:16}}>Isi toples dengan SEMUA kemenanganmu — besar dan kecil. Saat di titik terendah, tekan tombol untuk mengambil satu kue dan mengingat siapa dirimu. Ini bank energimu.</p>
+<div style={{display:"flex",gap:6,marginBottom:12}}>{Object.entries(sm).map(([k,v])=>(<button key={k} onClick={()=>setS(k)} style={{background:size===k?`${v.c}25`:"transparent",border:`1px solid ${size===k?v.c:"rgba(255,255,255,0.08)"}`,color:size===k?v.c:"rgba(255,255,255,0.3)",padding:"5px 12px",fontFamily:"'Bebas Neue',sans-serif",fontSize:10,letterSpacing:2,cursor:"pointer"}}>{v.e} {k.toUpperCase()}</button>))}</div>
+<div style={{display:"flex",gap:8,marginBottom:12}}><input value={input} onChange={e=>setI(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} placeholder="Kemenangan apa yang pernah kau raih?" style={{...inp,flex:1}}/><button onClick={add} style={{background:"#F4A261",color:"#000",border:"none",padding:"12px 20px",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:2,cursor:"pointer",fontSize:12}}>SIMPAN</button></div>
+<button onClick={grab} style={{width:"100%",padding:14,background:"linear-gradient(135deg,#F4A261,#E76F51)",border:"none",fontFamily:"'Bebas Neue',sans-serif",fontSize:17,letterSpacing:3,cursor:"pointer",color:"#000",marginBottom:20}}>🍪 AMBIL KUE SAAT LEMAH</button>
+{show&&<div style={{padding:24,background:"rgba(244,162,97,0.08)",border:"1px solid rgba(244,162,97,0.2)",marginBottom:20,textAlign:"center"}}><div style={{fontSize:40,marginBottom:10}}>{sm[show.s]?.e||"🍪"}</div><div style={{fontFamily:"'Libre Baskerville',serif",fontSize:16,color:"#F4A261",fontStyle:"italic",lineHeight:1.6}}>"{show.t}"</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"rgba(255,255,255,0.2)",marginTop:8}}>{show.dt}</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"rgba(255,255,255,0.45)",marginTop:12,lineHeight:1.6}}>Kau SUDAH pernah melakukan ini. Sekarang kembali bertempur.</div><button onClick={()=>setShow(null)} style={{marginTop:12,background:"none",border:"1px solid rgba(244,162,97,0.3)",color:"#F4A261",padding:"7px 20px",cursor:"pointer",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:2,fontSize:10}}>TUTUP</button></div>}
+<div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:10,color:"rgba(255,255,255,0.15)",letterSpacing:3,marginBottom:8}}>TOPLES — {cookies.length} KUE</div>
+{cookies.map((c,i)=>(<div key={i} style={{padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.03)",display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{flex:1}}><span style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"rgba(255,255,255,0.55)"}}>{sm[c.s]?.e||"🍪"} {c.t}</span><div style={{fontSize:10,color:"rgba(255,255,255,0.12)",marginTop:1}}>{c.dt}</div></div><button onClick={()=>save(cookies.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:"rgba(255,255,255,0.1)",cursor:"pointer"}}>×</button></div>))}</div>);}
 
-  if (tag) {
-    const tg = document.createElement('span');
-    tg.className = 'node-tag'; tg.textContent = tag;
-    el.appendChild(tg);
-  }
+function FortyT(){const[log,save]=usePersist("__f4",[]);const[pct,setPct]=useState(40);const[a,setA]=useState("");const[q,setQ]=useState("");const[ac,setAc]=useState("");const[n,setN]=useState("");const addE=()=>{if(!a.trim())return;const qn=parseInt(q)||0,an=parseInt(ac)||0,r=qn>0?Math.round(an/qn*100):100;save([{a:a.trim(),q:qn,ac:an,r,n:n.trim(),dt:new Date().toLocaleDateString("id-ID")},...log]);setA("");setQ("");setAc("");setN("")};const avg=log.length?Math.round(log.reduce((s,e)=>s+e.r,0)/log.length):0;
+return(<div><Quote text="Saat kau pikir sudah selesai, kau baru memberikan 40%. Ada 60% lagi yang tersisa. Matikan pembatasnya." color="#2A9D8F"/>
+<div style={{display:"flex",gap:16,marginBottom:24}}><div style={{flex:1,height:200,position:"relative",background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.05)",overflow:"hidden"}}><div style={{position:"absolute",bottom:0,left:0,right:0,height:`${pct}%`,transition:"height 0.4s",background:pct<=40?"linear-gradient(to top,#E63946,#E6394615)":pct<=70?"linear-gradient(to top,#F4A261,#F4A26115)":"linear-gradient(to top,#2A9D8F,#2A9D8F15)"}}/><div style={{position:"absolute",left:0,right:0,bottom:"40%",borderTop:"2px dashed rgba(230,57,70,0.3)"}}><span style={{position:"absolute",right:4,top:-14,fontFamily:"'Bebas Neue',sans-serif",fontSize:9,color:"#E63946"}}>GOVERNOR 40%</span></div><div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column"}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:44,color:"#fff"}}>{pct}%</div></div></div>
+<div style={{width:100,display:"flex",flexDirection:"column",gap:8}}><div style={{flex:1,padding:10,background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.05)",textAlign:"center",display:"flex",flexDirection:"column",justifyContent:"center"}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"#2A9D8F"}}>{avg}%</div><div style={{fontSize:9,color:"rgba(255,255,255,0.25)"}}>RATA-RATA</div></div><div style={{flex:1,padding:10,background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.05)",textAlign:"center",display:"flex",flexDirection:"column",justifyContent:"center"}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:"#F4A261"}}>{log.length}</div><div style={{fontSize:9,color:"rgba(255,255,255,0.25)"}}>SESI</div></div></div></div>
+<input type="range" min={0} max={100} value={pct} onChange={e=>setPct(+e.target.value)} style={{width:"100%",marginBottom:20,accentColor:"#E63946"}}/>
+<input value={a} onChange={e=>setA(e.target.value)} placeholder="Aktivitas (Lari, Push-up, Belajar...)" style={{...inp,marginBottom:5}}/><div style={{display:"flex",gap:5,marginBottom:5}}><input value={q} onChange={e=>setQ(e.target.value)} type="number" placeholder="Mau berhenti di..." style={{...inp,flex:1}}/><input value={ac} onChange={e=>setAc(e.target.value)} type="number" placeholder="Benar-benar dicapai" style={{...inp,flex:1}}/></div><input value={n} onChange={e=>setN(e.target.value)} placeholder="Catatan mental (opsional)" style={{...inp,marginBottom:8}}/><button onClick={addE} style={{width:"100%",padding:14,background:"#2A9D8F",border:"none",fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:3,cursor:"pointer",color:"#fff"}}>CATAT SESI</button>
+<div style={{marginTop:16}}>{log.map((e,i)=>(<div key={i} style={{padding:"10px 0",borderBottom:"1px solid rgba(255,255,255,0.03)",display:"flex",justifyContent:"space-between"}}><div style={{flex:1}}><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#fff"}}>{e.a}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.2)",marginTop:2}}>Target: {e.q} → Aktual: {e.ac} {e.ac>e.q&&<span style={{color:"#2A9D8F"}}>(+{e.ac-e.q}!)</span>}</div>{e.n&&<div style={{fontSize:11,color:"rgba(255,255,255,0.15)",fontStyle:"italic"}}>{e.n}</div>}<div style={{fontSize:9,color:"rgba(255,255,255,0.1)"}}>{e.dt}</div></div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:e.r>100?"#2A9D8F":e.r>60?"#F4A261":"#E63946",minWidth:45,textAlign:"right"}}>{e.r}%</div></div>))}</div></div>);}
 
-  canvas.appendChild(el);
+function SoulsT(){const[b,save]=usePersist("__s4",[]);const[f,setF]=useState({ch:"",mw:"",ow:"",pl:"",why:""});const add=()=>{if(!f.ch.trim())return;save([{...f,dt:new Date().toLocaleDateString("id-ID"),w:false},...b]);setF({ch:"",mw:"",ow:"",pl:"",why:""})};
+return(<div><Quote text="Segala penderitaan emosional dan fisik itu terbatas! Tersenyumlah pada rasa sakit dan saksikan ia memudar." color="#9B2335"/>
+{[{k:"ch",p:"Tantangan / Pertempuranmu"},{k:"mw",p:"Kelemahanmu (jujur brutal)"},{k:"ow",p:"Kelemahan lawan / rintangan"},{k:"why",p:"MENGAPA kau bertempur? (motivasi terdalam)"}].map(x=>(<input key={x.k} value={f[x.k]} onChange={e=>setF({...f,[x.k]:e.target.value})} placeholder={x.p} style={{...inp,marginBottom:5}}/>))}<textarea value={f.pl} onChange={e=>setF({...f,pl:e.target.value})} placeholder="Rencana taktis detail untuk merebut jiwa..." rows={3} style={{...inp,resize:"vertical",marginBottom:8}}/><button onClick={add} style={{width:"100%",padding:14,background:"#9B2335",border:"none",fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:3,cursor:"pointer",color:"#fff"}}>⚔️ CATAT PERTEMPURAN</button>
+<div style={{marginTop:16}}>{b.map((x,i)=>(<div key={i} style={{padding:12,marginBottom:5,border:"1px solid rgba(255,255,255,0.04)",background:x.w?"rgba(42,157,143,0.05)":"rgba(255,255,255,0.015)"}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,color:"#fff"}}>{x.w?"✅":"⚔️"} {x.ch}</div><button onClick={()=>{const a=[...b];a[i].w=!a[i].w;save(a)}} style={{background:x.w?"#2A9D8F":"rgba(255,255,255,0.06)",border:"none",color:"#fff",padding:"3px 10px",cursor:"pointer",fontFamily:"'Bebas Neue',sans-serif",fontSize:9,letterSpacing:2}}>{x.w?"DIREBUT":"TANDAI"}</button></div>{x.why&&<div style={{fontSize:12,color:"#E63946",marginBottom:2}}>Mengapa: {x.why}</div>}{x.pl&&<div style={{fontSize:12,color:"rgba(255,255,255,0.3)"}}>Rencana: {x.pl}</div>}<div style={{fontSize:9,color:"rgba(255,255,255,0.1)",marginTop:3}}>{x.dt}</div></div>))}</div></div>);}
 
-  const nodeData = { id, x, y, label, color, emoji, note, tag, fontSize, radius, opacity, isRoot, el };
-  state.nodes.push(nodeData);
+function CallousT(){const[tasks,save]=usePersist("__cl4",[]);const[input,setI]=useState("");const add=()=>{if(!input.trim())return;save([...tasks,{t:input.trim(),r:0,s:0,ld:""}]);setI("")};const inc=i=>{const a=[...tasks];a[i].r++;const today=new Date().toLocaleDateString("id-ID");a[i].s=a[i].ld===today?a[i].s:a[i].s+1;a[i].ld=today;save(a)};const gl=r=>r>=50?{l:"TITANIUM",c:"#E63946",w:"100%"}:r>=30?{l:"BAJA",c:"#2A9D8F",w:"80%"}:r>=15?{l:"KERAS",c:"#F4A261",w:"60%"}:r>=5?{l:"KAPALAN",c:"#E9C46A",w:"40%"}:{l:"LEMBUT",c:"#8D99AE",w:"20%"};
+return(<div><p style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"rgba(255,255,255,0.45)",lineHeight:1.7,marginBottom:16}}>Setiap pengulangan mengeraskan pikiranmu seperti kapalan di tangan pekerja. Lacak hal sulit yang kau lakukan berulang. Level naik dari LEMBUT → KAPALAN → KERAS → BAJA → TITANIUM.</p>
+<div style={{display:"flex",gap:8,marginBottom:16}}><input value={input} onChange={e=>setI(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} placeholder="Hal sulit yang harus dilakukan berulang..." style={{...inp,flex:1}}/><button onClick={add} style={{background:"#6B705C",color:"#fff",border:"none",padding:"12px 16px",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:2,cursor:"pointer",fontSize:12}}>+</button></div>
+{tasks.map((t,i)=>{const l=gl(t.r);return(<div key={i} style={{padding:"12px 0",borderBottom:"1px solid rgba(255,255,255,0.03)"}}><div style={{display:"flex",gap:10,alignItems:"center",marginBottom:6}}><button onClick={()=>inc(i)} style={{width:36,height:36,background:l.c,border:"none",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,cursor:"pointer",color:"#000",flexShrink:0}}>+1</button><div style={{flex:1}}><div style={{fontSize:13,color:"#fff"}}>{t.t}</div><div style={{display:"flex",gap:8,marginTop:2}}><span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:9,color:l.c,letterSpacing:2}}>{l.l}</span><span style={{fontSize:10,color:"rgba(255,255,255,0.2)"}}>{t.r}x</span>{t.s>1&&<span style={{fontSize:10,color:"#F4A261"}}>🔥{t.s}d</span>}</div></div><button onClick={()=>save(tasks.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:"rgba(255,255,255,0.1)",cursor:"pointer"}}>×</button></div><div style={{height:3,background:"rgba(255,255,255,0.04)"}}><div style={{height:"100%",width:l.w,background:l.c,transition:"width 0.4s"}}/></div></div>)})}</div>);}
 
-  // Events
-  el.addEventListener('mousedown', e => onNodeMouseDown(e, id));
-  el.addEventListener('dblclick', e => { e.stopPropagation(); startEditLabel(id); });
-  el.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); showCtxMenu(e, id); });
+function SchedT(){const[blocks,save]=usePersist("__sc4",[]);const[time,setTime]=useState("06:00");const[task,setTask]=useState("");const[dur,setDur]=useState("30");const[cat,setCat]=useState("kerja");const add=()=>{if(!task.trim())return;const s=[...blocks,{time,task:task.trim(),dur:parseInt(dur)||30,cat,d:false}].sort((a,b)=>a.time.localeCompare(b.time));save(s);setTask("")};const cc={kerja:"#E63946",olahraga:"#2A9D8F",belajar:"#457B9D",istirahat:"#6B705C",pribadi:"#8338EC"};const done=blocks.filter(b=>b.d).length;const tot=blocks.reduce((s,b)=>s+b.dur,0);
+return(<div><p style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"rgba(255,255,255,0.45)",lineHeight:1.7,marginBottom:12}}>Satu tugas = satu fokus total. Kategorikan aktivitas. 40 jam/minggu = 40% effort. Ada 168 jam dalam seminggu!</p>
+{blocks.length>0&&<div style={{display:"flex",gap:8,marginBottom:14}}>{[{v:`${done}/${blocks.length}`,l:"SELESAI",c:"#457B9D"},{v:`${Math.floor(tot/60)}j${tot%60}m`,l:"TOTAL",c:"#2A9D8F"},{v:`${blocks.length?Math.round(done/blocks.length*100):0}%`,l:"PROGRESS",c:"#F4A261"}].map((s,i)=>(<div key={i} style={{flex:1,padding:10,background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.04)",textAlign:"center"}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:s.c}}>{s.v}</div><div style={{fontSize:9,color:"rgba(255,255,255,0.2)"}}>{s.l}</div></div>))}</div>}
+<div style={{display:"flex",gap:4,marginBottom:8,flexWrap:"wrap"}}>{Object.entries(cc).map(([k,c])=>(<button key={k} onClick={()=>setCat(k)} style={{background:cat===k?c:"transparent",border:`1px solid ${cat===k?c:"rgba(255,255,255,0.06)"}`,color:cat===k?"#fff":"rgba(255,255,255,0.25)",padding:"3px 8px",fontFamily:"'Bebas Neue',sans-serif",fontSize:9,letterSpacing:2,cursor:"pointer",textTransform:"uppercase"}}>{k}</button>))}</div>
+<div style={{display:"flex",gap:5,marginBottom:5,flexWrap:"wrap"}}><input type="time" value={time} onChange={e=>setTime(e.target.value)} style={{...inp,width:95,flex:"none"}}/><input value={task} onChange={e=>setTask(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()} placeholder="Tugas" style={{...inp,flex:1,minWidth:80}}/><select value={dur} onChange={e=>setDur(e.target.value)} style={{...inp,width:65,flex:"none"}}>{[15,30,45,60,90,120].map(d=><option key={d} value={d}>{d}m</option>)}</select></div>
+<button onClick={add} style={{width:"100%",padding:14,background:"#457B9D",border:"none",fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:3,cursor:"pointer",color:"#fff",marginBottom:14}}>TAMBAH BLOK</button>
+{blocks.map((b,i)=>(<div key={i} onClick={()=>{const a=[...blocks];a[i].d=!a[i].d;save(a)}} style={{display:"flex",gap:8,alignItems:"center",padding:"8px",marginBottom:2,cursor:"pointer",background:b.d?`${cc[b.cat]}08`:"rgba(255,255,255,0.01)",border:"1px solid rgba(255,255,255,0.03)",borderLeft:`3px solid ${cc[b.cat]}`}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:13,color:b.d?"rgba(255,255,255,0.2)":cc[b.cat],minWidth:42}}>{b.time}</div><div style={{flex:1,fontSize:13,color:b.d?"rgba(255,255,255,0.2)":"#fff",textDecoration:b.d?"line-through":"none"}}>{b.task}</div><div style={{fontSize:10,color:"rgba(255,255,255,0.12)"}}>{b.dur}m</div><div style={{width:16,height:16,border:b.d?"none":"1px solid rgba(255,255,255,0.12)",background:b.d?cc[b.cat]:"transparent",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:9}}>{b.d?"✓":""}</div></div>))}</div>);}
 
-  // Resize handle
-  rh.addEventListener('mousedown', e => { e.stopPropagation(); startResize(e, id); });
+function VizT(){const[v,save]=usePersist("__v4",[]);const[f,setF]=useState({g:"",s:"",o:"",w:"",df:""});const add=()=>{if(!f.g.trim())return;save([{...f,dt:new Date().toLocaleDateString("id-ID")},...v]);setF({g:"",s:"",o:"",w:"",df:""})};
+return(<div><Quote text="Visualisasi bukan bermimpi. Kau harus memvisualisasikan HAMBATAN dan bagaimana menyerangnya." color="#8338EC"/>
+{[{k:"g",p:"Tujuan / tantangan besarmu"},{k:"s",p:"Bagaimana rasanya saat BERHASIL? (detail emosi)"},{k:"o",p:"Hambatan yang PASTI muncul?"},{k:"w",p:"MENGAPA kau melakukan ini?"},{k:"df",p:"Bahan bakar gelap (rasa sakit yang kau gunakan)"}].map(x=>(<input key={x.k} value={f[x.k]} onChange={e=>setF({...f,[x.k]:e.target.value})} placeholder={x.p} style={{...inp,marginBottom:5}}/>))}<button onClick={add} style={{width:"100%",padding:14,background:"#8338EC",border:"none",fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:3,cursor:"pointer",color:"#fff"}}>🛡️ SIMPAN VISUALISASI</button>
+<div style={{marginTop:16}}>{v.map((x,i)=>(<div key={i} style={{padding:12,marginBottom:5,border:"1px solid rgba(131,56,236,0.08)",background:"rgba(131,56,236,0.02)"}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,color:"#fff",marginBottom:4}}>🎯 {x.g}</div>{x.s&&<div style={{fontSize:12,color:"#2A9D8F"}}>Sukses: {x.s}</div>}{x.o&&<div style={{fontSize:12,color:"#E63946"}}>Hambatan: {x.o}</div>}{x.w&&<div style={{fontSize:12,color:"#F4A261"}}>Mengapa: {x.w}</div>}{x.df&&<div style={{fontSize:12,color:"#8338EC"}}>Bahan bakar: {x.df}</div>}<div style={{fontSize:9,color:"rgba(255,255,255,0.1)",marginTop:3}}>{x.dt}</div></div>))}</div></div>);}
 
-  return nodeData;
+function AART(){const[r,save]=usePersist("__a4",[]);const[f,setF]=useState({fl:"",gd:"",bd:"",ms:"",fx:"",rt:""});const add=()=>{if(!f.fl.trim())return;save([{...f,dt:new Date().toLocaleDateString("id-ID"),rd:false},...r]);setF({fl:"",gd:"",bd:"",ms:"",fx:"",rt:""})};
+return(<div><Quote text="Jika gagal lagi, ya sudah. Terima rasa sakitnya. Ulangi langkah-langkahnya. Itulah intinya." color="#E07A5F"/>
+<input value={f.fl} onChange={e=>setF({...f,fl:e.target.value})} placeholder="Kegagalan apa? (detail)" style={{...inp,marginBottom:5}}/><textarea value={f.gd} onChange={e=>setF({...f,gd:e.target.value})} placeholder="Apa yang BAIK? (selalu ada — cari!)" rows={2} style={{...inp,marginBottom:5,resize:"vertical"}}/><textarea value={f.bd} onChange={e=>setF({...f,bd:e.target.value})} placeholder="Apa yang SALAH? (brutal)" rows={2} style={{...inp,marginBottom:5,resize:"vertical"}}/><input value={f.ms} onChange={e=>setF({...f,ms:e.target.value})} placeholder="Pola pikir saat gagal?" style={{...inp,marginBottom:5}}/><textarea value={f.fx} onChange={e=>setF({...f,fx:e.target.value})} placeholder="Yang BISA diperbaiki?" rows={2} style={{...inp,marginBottom:5,resize:"vertical"}}/><input value={f.rt} onChange={e=>setF({...f,rt:e.target.value})} placeholder="Kapan COBA LAGI? (tanggal spesifik)" style={{...inp,marginBottom:8}}/><button onClick={add} style={{width:"100%",padding:14,background:"#E07A5F",border:"none",fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:3,cursor:"pointer",color:"#fff"}}>📋 SIMPAN AAR</button>
+<div style={{marginTop:16}}>{r.map((x,i)=>(<div key={i} style={{padding:12,marginBottom:5,border:"1px solid rgba(224,122,95,0.08)",background:x.rd?"rgba(42,157,143,0.04)":"rgba(224,122,95,0.02)"}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,color:"#fff"}}>{x.rd?"✅":"📋"} {x.fl}</div><button onClick={()=>{const a=[...r];a[i].rd=!a[i].rd;save(a)}} style={{background:x.rd?"#2A9D8F":"rgba(255,255,255,0.06)",border:"none",color:"#fff",padding:"3px 10px",cursor:"pointer",fontFamily:"'Bebas Neue',sans-serif",fontSize:9,letterSpacing:1}}>{x.rd?"ULANG ✓":"TANDAI"}</button></div>{x.gd&&<div style={{fontSize:12,color:"#2A9D8F"}}>✓ Baik: {x.gd}</div>}{x.bd&&<div style={{fontSize:12,color:"#E63946"}}>✗ Salah: {x.bd}</div>}{x.fx&&<div style={{fontSize:12,color:"#F4A261"}}>🔧 Fix: {x.fx}</div>}{x.rt&&<div style={{fontSize:12,color:"#8338EC"}}>📅 Ulang: {x.rt}</div>}<div style={{fontSize:9,color:"rgba(255,255,255,0.1)",marginTop:3}}>{x.dt}</div></div>))}</div></div>);}
+
+const TC={mirror:MirrorT,cookie:CookieT,forty:FortyT,souls:SoulsT,callous:CallousT,schedule:SchedT,viz:VizT,aar:AART};
+
+function ToolsP({tp,setTp}){
+  if(tp){const Comp=TC[tp];const d=TOOLS.find(t=>t.id===tp);return(<div style={{padding:"30px 16px 100px",maxWidth:640,margin:"0 auto"}}><button onClick={()=>setTp(null)} style={{background:"none",border:"none",color:"#E63946",cursor:"pointer",fontFamily:"'Bebas Neue',sans-serif",fontSize:11,letterSpacing:3,padding:0,marginBottom:16}}>← ARSENAL</button><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:10,color:d.color,letterSpacing:4,marginBottom:3}}>{d.sub}</div><h2 style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"#fff",margin:"0 0 5px",lineHeight:1}}>{d.name}</h2><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"rgba(255,255,255,0.2)",marginBottom:20,lineHeight:1.5}}>Asal: {d.origin}</div><Comp/></div>);}
+  return(<div style={{padding:"30px 16px 100px",maxWidth:640,margin:"0 auto"}}><SH tag="ARSENAL MENTAL" title="8 Senjata Pikiran" sub="Setiap alat dari pengalaman nyata David Goggins. Bukan teori — senjata yang telah diuji di medan perang."/><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>{TOOLS.map(t=>(<button key={t.id} onClick={()=>setTp(t.id)} style={{background:t.g,border:"none",padding:"18px 14px",cursor:"pointer",textAlign:"left",transition:"transform 0.2s"}} onMouseEnter={e=>e.currentTarget.style.transform="scale(1.03)"} onMouseLeave={e=>e.currentTarget.style.transform="scale(1)"}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,color:"#fff",letterSpacing:0.5,marginBottom:3,lineHeight:1.2}}>{t.name}</div><div style={{fontSize:10,color:"rgba(255,255,255,0.45)",marginBottom:4}}>{t.sub}</div><div style={{fontSize:10,color:"rgba(255,255,255,0.3)",lineHeight:1.4}}>{t.desc}</div></button>))}</div></div>);
 }
 
-function startEditLabel(id) {
-  const nd = state.nodes.find(n => n.id === id);
-  if (!nd) return;
-  const lbl = nd.el.querySelector('.node-label');
-  lbl.contentEditable = 'true';
-  lbl.focus();
-  const r = document.createRange(); r.selectNodeContents(lbl);
-  const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
-  const done = () => {
-    lbl.contentEditable = 'false';
-    nd.label = lbl.textContent.trim() || nd.label;
-    lbl.textContent = nd.label;
-    updatePanel(id);
-  };
-  lbl.addEventListener('blur', done, { once: true });
-  lbl.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); lbl.blur(); } });
+// CHALLENGES — Full detail
+function MissP(){const[done,save]=usePersist("__ch4",{});const[open,setOpen]=useState(null);const toggle=n=>{save({...done,[n]:!done[n]})};const completed=Object.values(done).filter(Boolean).length;
+return(<div style={{padding:"30px 16px 100px",maxWidth:640,margin:"0 auto"}}><SH tag="PERINTAH MISI" title="10 Tantangan Goggins" sub="Setiap tantangan dengan instruksi lengkap dan 7 langkah detail. Baca, lakukan, tandai."/>
+<div style={{display:"flex",gap:12,marginBottom:24,alignItems:"center"}}><div style={{flex:1,height:6,background:"rgba(255,255,255,0.04)"}}><div style={{height:"100%",width:`${completed/10*100}%`,background:completed===10?"#2A9D8F":"linear-gradient(90deg,#E63946,#F4A261)",transition:"width 0.5s"}}/></div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,color:completed===10?"#2A9D8F":"#F4A261",letterSpacing:2}}>{completed}/10</div></div>
+{completed===10&&<div style={{padding:20,background:"rgba(42,157,143,0.06)",border:"1px solid rgba(42,157,143,0.15)",marginBottom:20,textAlign:"center"}}><div style={{fontSize:30,marginBottom:6}}>🦅</div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:"#2A9D8F",letterSpacing:3}}>MISI SELESAI</div><div style={{fontSize:13,color:"rgba(255,255,255,0.4)",marginTop:6}}>Tapi ingat — kebesaran menguap. Ulangi.</div></div>}
+{CHALLENGES.map(ch=>(<div key={ch.num} style={{marginBottom:8}}><div style={{display:"flex",gap:12,padding:14,cursor:"pointer",background:done[ch.num]?"rgba(42,157,143,0.05)":"rgba(255,255,255,0.015)",border:`1px solid ${done[ch.num]?"rgba(42,157,143,0.12)":"rgba(255,255,255,0.04)"}`}} onClick={()=>setOpen(open===ch.num?null:ch.num)}><div style={{width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",background:done[ch.num]?"#2A9D8F":"rgba(230,57,70,0.1)",fontFamily:"'Bebas Neue',sans-serif",fontSize:14,color:done[ch.num]?"#fff":"#E63946",flexShrink:0}}>{done[ch.num]?"✓":ch.num}</div><div style={{flex:1}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,color:"#fff"}}>{ch.t}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.2)",marginTop:2}}>{ch.e}</div></div><span style={{color:"rgba(255,255,255,0.12)",fontSize:14,transition:"transform 0.3s",transform:open===ch.num?"rotate(90deg)":"rotate(0)"}}>▸</span></div>
+{open===ch.num&&<div style={{padding:"16px 16px 16px 58px",background:"rgba(0,0,0,0.25)",borderLeft:"2px solid #E63946"}}><p style={{fontSize:13,color:"rgba(255,255,255,0.55)",lineHeight:1.7,marginBottom:14}}>{ch.instr}</p><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:10,color:"#F4A261",letterSpacing:3,marginBottom:8}}>7 LANGKAH</div>{ch.steps.map((s,i)=>(<div key={i} style={{display:"flex",gap:8,marginBottom:5}}><span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:11,color:"rgba(230,57,70,0.35)",minWidth:14}}>{i+1}</span><span style={{fontSize:12,color:"rgba(255,255,255,0.45)",lineHeight:1.6}}>{s}</span></div>))}<div style={{marginTop:10,fontSize:11,color:"rgba(255,255,255,0.15)"}}>{ch.tag}</div><button onClick={e=>{e.stopPropagation();toggle(ch.num)}} style={{marginTop:10,background:done[ch.num]?"rgba(255,255,255,0.08)":"#E63946",border:"none",color:"#fff",padding:"9px 22px",cursor:"pointer",fontFamily:"'Bebas Neue',sans-serif",fontSize:11,letterSpacing:2}}>{done[ch.num]?"BATALKAN":"SELESAI ✓"}</button></div>}
+</div>))}</div>);}
+
+// JOURNAL
+function JrnlP(){const[entries,save]=usePersist("__j4",[]);const[text,setText]=useState("");const[mood,setMood]=useState("💪");const[grat,setGrat]=useState("");const[tmrw,setTmrw]=useState("");const[lesson,setLesson]=useState("");const add=()=>{if(!text.trim())return;save([{text:text.trim(),mood,grat:grat.trim(),tmrw:tmrw.trim(),lesson:lesson.trim(),dt:new Date().toLocaleDateString("id-ID"),tm:new Date().toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"})},...entries]);setText("");setGrat("");setTmrw("");setLesson("")};
+return(<div style={{padding:"30px 16px 100px",maxWidth:640,margin:"0 auto"}}><SH tag="CATATAN PERANG" title="Jurnal Prajurit" sub="Dokumentasikan pertempuran, pelajaran, dan rasa syukur. Kejujuran brutal setiap hari."/>
+<div style={{display:"flex",gap:5,marginBottom:12,flexWrap:"wrap"}}>{["💪","🔥","😤","🧘","💀","🦅","🏃","🧠","⚡","🌊"].map(m=>(<button key={m} onClick={()=>setMood(m)} style={{fontSize:20,background:mood===m?"rgba(230,57,70,0.12)":"transparent",border:mood===m?"1px solid rgba(230,57,70,0.25)":"1px solid rgba(255,255,255,0.04)",cursor:"pointer",padding:"4px 7px"}}>{m}</button>))}</div>
+<textarea value={text} onChange={e=>setText(e.target.value)} placeholder="Pertempuran hari ini? Di mana kau menyerah atau bertahan? Jujur brutal." rows={4} style={{...inp,resize:"vertical",lineHeight:1.6,marginBottom:5}}/>
+<input value={lesson} onChange={e=>setLesson(e.target.value)} placeholder="Pelajaran apa yang kau petik hari ini?" style={{...inp,marginBottom:5}}/>
+<input value={grat} onChange={e=>setGrat(e.target.value)} placeholder="Yang kau syukuri? (bahan bakar Cookie Jar)" style={{...inp,marginBottom:5}}/>
+<input value={tmrw} onChange={e=>setTmrw(e.target.value)} placeholder="Misi besok — satu hal yang HARUS ditaklukkan" style={{...inp,marginBottom:8}}/>
+<button onClick={add} style={{width:"100%",padding:14,background:"#E63946",border:"none",fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:3,cursor:"pointer",color:"#fff"}}>CATAT HARI INI</button>
+<div style={{marginTop:20}}>{!entries.length&&<div style={{textAlign:"center",padding:40,color:"rgba(255,255,255,0.07)",fontSize:13}}>Belum ada catatan.</div>}
+{entries.map((e,i)=>(<div key={i} style={{padding:14,marginBottom:5,border:"1px solid rgba(255,255,255,0.03)",background:"rgba(255,255,255,0.012)"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}><span style={{fontSize:18}}>{e.mood}</span><div style={{fontSize:10,color:"rgba(255,255,255,0.15)"}}>{e.dt} • {e.tm}</div></div><div style={{fontSize:13,color:"rgba(255,255,255,0.6)",lineHeight:1.7,marginBottom:5}}>{e.text}</div>{e.lesson&&<div style={{fontSize:12,color:"#8338EC",marginBottom:2}}>Pelajaran: {e.lesson}</div>}{e.grat&&<div style={{fontSize:12,color:"#2A9D8F",marginBottom:2}}>Syukur: {e.grat}</div>}{e.tmrw&&<div style={{fontSize:12,color:"#F4A261"}}>Misi besok: {e.tmrw}</div>}<button onClick={()=>save(entries.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:"rgba(255,255,255,0.08)",cursor:"pointer",fontSize:9,marginTop:6,padding:0}}>hapus</button></div>))}</div></div>);}
+
+// STATS
+function StatsP(){const gl=k=>{try{return JSON.parse(localStorage.getItem(k)||"[]").length}catch{return 0}};const go=k=>{try{return Object.values(JSON.parse(localStorage.getItem(k)||"{}")).filter(Boolean).length}catch{return 0}};
+const stats=[{l:"Cermin Post-It",v:gl("__m4"),c:"#E63946"},{l:"Toples Kue",v:gl("__c4"),c:"#F4A261"},{l:"Sesi 40%",v:gl("__f4"),c:"#2A9D8F"},{l:"Pertempuran",v:gl("__s4"),c:"#9B2335"},{l:"Pengerasan",v:gl("__cl4"),c:"#6B705C"},{l:"Blok Jadwal",v:gl("__sc4"),c:"#457B9D"},{l:"Visualisasi",v:gl("__v4"),c:"#8338EC"},{l:"AAR",v:gl("__a4"),c:"#E07A5F"},{l:"Jurnal",v:gl("__j4"),c:"#E63946"},{l:"Tantangan",v:`${go("__ch4")}/10`,c:"#F4A261"}];const total=stats.reduce((s,st)=>s+(typeof st.v==="number"?st.v:0),0);
+return(<div style={{padding:"30px 16px 100px",maxWidth:640,margin:"0 auto"}}><SH tag="LAPORAN MEDAN" title="Statistik Perang" sub="Ringkasan seluruh aktivitasmu di medan perang mental."/>
+<div style={{padding:24,background:"linear-gradient(135deg,rgba(230,57,70,0.06),rgba(42,157,143,0.04))",border:"1px solid rgba(230,57,70,0.1)",textAlign:"center",marginBottom:24}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:52,color:"#E63946",lineHeight:1}}>{total}</div><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:11,color:"rgba(255,255,255,0.25)",letterSpacing:4}}>TOTAL ENTRI</div></div>
+<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>{stats.map((s,i)=>(<div key={i} style={{padding:14,background:"rgba(255,255,255,0.015)",border:"1px solid rgba(255,255,255,0.04)",borderLeft:`3px solid ${s.c}`}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:26,color:s.c}}>{s.v}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.25)"}}>{s.l}</div></div>))}</div>
+<div style={{marginTop:28,padding:18,background:"rgba(255,255,255,0.015)",border:"1px solid rgba(255,255,255,0.04)"}}><div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:11,color:"#E63946",letterSpacing:3,marginBottom:10}}>PENGINGAT HARIAN</div>
+{["Kau baru di 40%. Ada 60% lagi yang tersisa.","Bakat tidak diperlukan. Kerja keras tak kenal ampun — itu yang diperlukan.","Jangan berhenti saat lelah. Berhenti saat SELESAI.","Kebesaran menguap seperti kilatan minyak di wajan. Rebut setiap hari.","Satu-satunya lawan adalah dirimu sendiri.","Dibutuhkan 20 tahun untuk mendapat 20 tahun pengalaman.","Pertanyaan paling menghantui: bagaimana jika aku tidak pernah MENCOBA?"].map((r,i)=>(<div key={i} style={{fontSize:12,color:"rgba(255,255,255,0.4)",lineHeight:1.6,marginBottom:7,paddingLeft:12,borderLeft:"2px solid rgba(230,57,70,0.15)"}}>{r}</div>))}</div></div>);}
+
+// ============================================================
+// APP
+// ============================================================
+export default function App(){
+  const[page,setPage]=useState("home");const[tp,setTp]=useState(null);
+  useEffect(()=>{const l=document.createElement("link");l.href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=Libre+Baskerville:ital,wght@0,400;1,400&display=swap";l.rel="stylesheet";document.head.appendChild(l);const s=document.createElement("style");s.textContent="*{-webkit-tap-highlight-color:transparent}input[type=range]{-webkit-appearance:none;height:3px;background:rgba(255,255,255,0.08)}input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:#E63946;cursor:pointer}::selection{background:#E6394640}";document.head.appendChild(s)},[]);
+  const go=p=>{setPage(p);setTp(null);window.scrollTo(0,0)};
+  return(<div style={{minHeight:"100vh",background:"#08080A",color:"#fff",fontFamily:"'DM Sans',sans-serif",WebkitFontSmoothing:"antialiased"}}>{page==="home"?<Home go={go}/>:page==="ch"?<Chs/>:page==="tools"?<ToolsP tp={tp} setTp={setTp}/>:page==="miss"?<MissP/>:page==="jrnl"?<JrnlP/>:page==="stats"?<StatsP/>:<Home go={go}/>}<Nav p={page} go={go}/></div>);
 }
-
-// ═══════════════════════════════════════════════════════
-//  EDGES
-// ═══════════════════════════════════════════════════════
-function drawEdges() {
-  // clear old
-  svgLines.querySelectorAll('.conn-line').forEach(e => e.remove());
-  state.edges.forEach(edge => {
-    const a = state.nodes.find(n => n.id === edge.from);
-    const b = state.nodes.find(n => n.id === edge.to);
-    if (!a || !b) return;
-    const ax = a.x + a.el.offsetWidth/2, ay = a.y + a.el.offsetHeight/2;
-    const bx = b.x + b.el.offsetWidth/2, by = b.y + b.el.offsetHeight/2;
-    const dx = bx - ax, dy = by - ay;
-    const cx1 = ax + dx*0.45, cy1 = ay;
-    const cx2 = bx - dx*0.45, cy2 = by;
-
-    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
-    path.classList.add('conn-line');
-    path.setAttribute('d', `M${ax},${ay} C${cx1},${cy1} ${cx2},${cy2} ${bx},${by}`);
-    const col = a.color || '#7c6ef5';
-    path.setAttribute('stroke', col);
-    path.setAttribute('filter', 'url(#glow-filter)');
-    path.style.animationDelay = '0s';
-    svgLines.appendChild(path);
-  });
-}
-
-function addEdge(from, to) {
-  if (from === to) return;
-  if (state.edges.find(e => (e.from===from&&e.to===to)||(e.from===to&&e.to===from))) return;
-  state.edges.push({ from, to });
-  drawEdges();
-}
-
-function removeEdgesOf(id) {
-  state.edges = state.edges.filter(e => e.from !== id && e.to !== id);
-  drawEdges();
-}
-
-// ═══════════════════════════════════════════════════════
-//  DRAG NODE
-// ═══════════════════════════════════════════════════════
-function onNodeMouseDown(e, id) {
-  if (e.button !== 0) return;
-  e.stopPropagation();
-
-  selectNode(id);
-
-  if (state.linkMode) {
-    if (!state.linkFrom) {
-      state.linkFrom = id;
-      toast('Klik node tujuan untuk menghubungkan…', 2000);
-    } else {
-      addEdge(state.linkFrom, id);
-      state.linkFrom = null;
-      toast('Koneksi dibuat! ✓');
-    }
-    return;
-  }
-
-  const nd = state.nodes.find(n => n.id === id);
-  const pos = canvasPos(e);
-  state.dragging = id;
-  state.dragOffset = { x: pos.x - nd.x, y: pos.y - nd.y };
-}
-
-function canvasPos(e) {
-  return {
-    x: (e.clientX - wrap.getBoundingClientRect().left - state.pan.x) / state.zoom,
-    y: (e.clientY - wrap.getBoundingClientRect().top  - state.pan.y) / state.zoom,
-  };
-}
-
-// ═══════════════════════════════════════════════════════
-//  RESIZE
-// ═══════════════════════════════════════════════════════
-let resizing = null;
-function startResize(e, id) {
-  resizing = { id, sx: e.clientX, sy: e.clientY };
-  const nd = state.nodes.find(n => n.id === id);
-  resizing.ow = nd.el.offsetWidth;
-  resizing.oh = nd.el.offsetHeight;
-}
-
-// ═══════════════════════════════════════════════════════
-//  SELECTION
-// ═══════════════════════════════════════════════════════
-function selectNode(id) {
-  state.selectedId = id;
-  state.nodes.forEach(n => n.el.classList.toggle('selected', n.id === id));
-  updatePanel(id);
-}
-
-function clearSelection() {
-  state.selectedId = null;
-  state.nodes.forEach(n => n.el.classList.remove('selected'));
-  document.getElementById('panel-form').style.display = 'none';
-  document.getElementById('panel-empty').style.display = 'block';
-}
-
-// ═══════════════════════════════════════════════════════
-//  PANEL
-// ═══════════════════════════════════════════════════════
-function updatePanel(id) {
-  const nd = state.nodes.find(n => n.id === id);
-  if (!nd) return;
-  document.getElementById('panel-empty').style.display = 'none';
-  document.getElementById('panel-form').style.display = 'block';
-  document.getElementById('p-label').value = nd.label;
-  document.getElementById('p-note').value = nd.note || '';
-  document.getElementById('p-emoji').value = nd.emoji || '';
-  document.getElementById('p-tag').value = nd.tag || '';
-  document.getElementById('p-fontsize').value = nd.fontSize || 13;
-  document.getElementById('p-fontsize-val').textContent = (nd.fontSize||13) + 'px';
-  document.getElementById('p-radius').value = nd.radius || 16;
-  document.getElementById('p-radius-val').textContent = (nd.radius||16) + 'px';
-  document.getElementById('p-opacity').value = nd.opacity || 100;
-  document.getElementById('p-opacity-val').textContent = (nd.opacity||100) + '%';
-  // color swatches
-  const pr = document.getElementById('p-colors');
-  pr.innerHTML = '';
-  COLORS.forEach(c => {
-    const s = document.createElement('div');
-    s.className = 'c-swatch' + (c === nd.color ? ' active' : '');
-    s.style.background = c;
-    s.dataset.color = c;
-    s.onclick = () => { pr.querySelectorAll('.c-swatch').forEach(x=>x.classList.remove('active')); s.classList.add('active'); };
-    pr.appendChild(s);
-  });
-}
-
-document.getElementById('p-fontsize').oninput = function() {
-  document.getElementById('p-fontsize-val').textContent = this.value+'px';
-};
-document.getElementById('p-radius').oninput = function() {
-  document.getElementById('p-radius-val').textContent = this.value+'px';
-};
-document.getElementById('p-opacity').oninput = function() {
-  document.getElementById('p-opacity-val').textContent = this.value+'%';
-};
-
-document.getElementById('p-apply').onclick = () => {
-  const id = state.selectedId; if (!id) return;
-  const nd = state.nodes.find(n => n.id === id); if (!nd) return;
-  const newLabel = document.getElementById('p-label').value.trim() || nd.label;
-  const newColor = document.querySelector('#p-colors .c-swatch.active')?.dataset.color || nd.color;
-  const newEmoji = document.getElementById('p-emoji').value.trim();
-  const newNote  = document.getElementById('p-note').value;
-  const newTag   = document.getElementById('p-tag').value.trim();
-  const newFs    = +document.getElementById('p-fontsize').value;
-  const newRad   = +document.getElementById('p-radius').value;
-  const newOp    = +document.getElementById('p-opacity').value;
-
-  nd.label = newLabel; nd.color = newColor; nd.emoji = newEmoji;
-  nd.note = newNote; nd.tag = newTag; nd.fontSize = newFs;
-  nd.radius = newRad; nd.opacity = newOp;
-
-  // Re-render the node element
-  const el = nd.el;
-  el.style.borderColor = hexAlpha(newColor,.5);
-  el.style.background  = hexAlpha(newColor,.12);
-  el.style.borderRadius = newRad+'px';
-  el.style.opacity = newOp/100;
-  el.style.boxShadow = `0 0 20px ${hexAlpha(newColor,.15)}, 0 4px 20px rgba(0,0,0,.5)`;
-
-  // Rebuild inner content
-  while (el.firstChild) el.removeChild(el.firstChild);
-  const rh = document.createElement('div'); rh.className='resize-h'; el.appendChild(rh);
-  rh.addEventListener('mousedown', e => { e.stopPropagation(); startResize(e, id); });
-
-  if (newEmoji) {
-    const em = document.createElement('span'); em.className='node-emoji'; em.textContent=newEmoji; el.appendChild(em);
-  }
-  const lbl = document.createElement('div');
-  lbl.className='node-label'; lbl.dataset.ph='Klik untuk edit...';
-  lbl.contentEditable='false'; lbl.style.fontSize=newFs+'px';
-  lbl.textContent=newLabel; el.appendChild(lbl);
-
-  if (newTag) {
-    const tg = document.createElement('span'); tg.className='node-tag'; tg.textContent=newTag; el.appendChild(tg);
-  }
-  el.addEventListener('dblclick', e => { e.stopPropagation(); startEditLabel(id); });
-
-  drawEdges();
-  toast('Node diperbarui ✓');
-};
-
-// ═══════════════════════════════════════════════════════
-//  CONTEXT MENU
-// ═══════════════════════════════════════════════════════
-let ctxNodeId = null;
-function showCtxMenu(e, id) {
-  ctxNodeId = id;
-  selectNode(id);
-  const m = document.getElementById('ctx-menu');
-  m.style.left = e.clientX + 'px';
-  m.style.top  = e.clientY + 'px';
-  m.classList.add('show');
-}
-document.addEventListener('click', () => document.getElementById('ctx-menu').classList.remove('show'));
-
-document.getElementById('ctx-add-child').onclick = () => {
-  if (!ctxNodeId) return;
-  const parent = state.nodes.find(n => n.id === ctxNodeId);
-  const id = uid();
-  const child = createNode({ id, x: parent.x+180, y: parent.y+50, label:'Cabang Baru', color: state.activeColor });
-  addEdge(ctxNodeId, id);
-  selectNode(id);
-  toast('Cabang ditambahkan!');
-};
-
-document.getElementById('ctx-dupe').onclick = () => {
-  if (!ctxNodeId) return;
-  const src = state.nodes.find(n => n.id === ctxNodeId);
-  const id = uid();
-  createNode({ ...src, id, x: src.x+30, y: src.y+30 });
-  toast('Node diduplikat!');
-};
-
-document.getElementById('ctx-edit').onclick = () => {
-  if (ctxNodeId) startEditLabel(ctxNodeId);
-};
-
-document.getElementById('ctx-del').onclick = () => {
-  deleteNode(ctxNodeId);
-};
-
-function deleteNode(id) {
-  const nd = state.nodes.find(n => n.id === id);
-  if (!nd) return;
-  nd.el.remove();
-  state.nodes = state.nodes.filter(n => n.id !== id);
-  removeEdgesOf(id);
-  clearSelection();
-  toast('Node dihapus');
-}
-
-// ═══════════════════════════════════════════════════════
-//  TOOLBAR BUTTONS
-// ═══════════════════════════════════════════════════════
-document.getElementById('btn-add').onclick = () => {
-  const id = uid();
-  const cx = (wrap.clientWidth/2 - state.pan.x) / state.zoom;
-  const cy = (wrap.clientHeight/2 - state.pan.y) / state.zoom;
-  createNode({ id, x: cx - 70 + Math.random()*60-30, y: cy - 30 + Math.random()*60-30, label:'Node Baru', color: state.activeColor });
-  selectNode(id);
-  toast('Node baru ditambahkan!');
-};
-
-document.getElementById('btn-link').onclick = function() {
-  state.linkMode = !state.linkMode;
-  state.linkFrom = null;
-  this.classList.toggle('active', state.linkMode);
-  canvas.classList.toggle('linking', state.linkMode);
-  toast(state.linkMode ? 'Mode Link Aktif — klik 2 node' : 'Mode Link Nonaktif');
-};
-
-document.getElementById('btn-del').onclick = () => {
-  if (state.selectedId) deleteNode(state.selectedId);
-};
-
-document.getElementById('btn-panel').onclick = function() {
-  document.getElementById('panel').classList.toggle('open');
-  this.classList.toggle('active');
-};
-
-// Color dots toolbar
-document.querySelectorAll('#toolbar .dot').forEach(d => {
-  d.onclick = () => {
-    document.querySelectorAll('#toolbar .dot').forEach(x=>x.classList.remove('sel'));
-    d.classList.add('sel');
-    state.activeColor = d.dataset.c;
-  };
-});
-
-// Zoom
-function setZoom(z) {
-  state.zoom = Math.max(0.2, Math.min(2.5, z));
-  canvas.style.transform = `translate(${state.pan.x}px,${state.pan.y}px) scale(${state.zoom})`;
-  document.getElementById('zoom-val').textContent = Math.round(state.zoom*100)+'%';
-  drawEdges();
-  updateMinimap();
-}
-document.getElementById('btn-zoom-in').onclick = () => setZoom(state.zoom + .15);
-document.getElementById('btn-zoom-out').onclick = () => setZoom(state.zoom - .15);
-
-wrap.addEventListener('wheel', e => {
-  e.preventDefault();
-  const delta = e.deltaY > 0 ? -0.08 : 0.08;
-  setZoom(state.zoom + delta);
-}, { passive: false });
-
-// Fit
-document.getElementById('btn-fit').onclick = () => {
-  if (!state.nodes.length) return;
-  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
-  state.nodes.forEach(n => {
-    minX = Math.min(minX, n.x); minY = Math.min(minY, n.y);
-    maxX = Math.max(maxX, n.x + n.el.offsetWidth);
-    maxY = Math.max(maxY, n.y + n.el.offsetHeight);
-  });
-  const pw = wrap.clientWidth, ph = wrap.clientHeight;
-  const mw = maxX - minX + 80, mh = maxY - minY + 80;
-  const nz = Math.min(pw/mw, ph/mh, 1.5);
-  state.zoom = nz;
-  state.pan.x = (pw - mw*nz)/2 - minX*nz + 40*nz;
-  state.pan.y = (ph - mh*nz)/2 - minY*nz + 40*nz;
-  canvas.style.transform = `translate(${state.pan.x}px,${state.pan.y}px) scale(${state.zoom})`;
-  document.getElementById('zoom-val').textContent = Math.round(nz*100)+'%';
-  drawEdges(); updateMinimap();
-};
-
-// Auto Layout (radial)
-document.getElementById('btn-auto').onclick = () => {
-  if (!state.nodes.length) return;
-  const root = state.nodes[0];
-  const cx = 1000, cy = 900;
-  root.x = cx; root.y = cy;
-  root.el.style.left = cx+'px'; root.el.style.top = cy+'px';
-  const rest = state.nodes.slice(1);
-  rest.forEach((n, i) => {
-    const angle = (i / rest.length) * Math.PI * 2 - Math.PI/2;
-    const r = 300 + (i%3)*80;
-    n.x = cx + Math.cos(angle)*r; n.y = cy + Math.sin(angle)*r;
-    n.el.style.left = n.x+'px'; n.el.style.top = n.y+'px';
-  });
-  drawEdges();
-  document.getElementById('btn-fit').click();
-  toast('Layout otomatis diterapkan!');
-};
-
-// Reset
-document.getElementById('btn-clear').onclick = () => {
-  if (!confirm('Reset semua? Peta akan dihapus.')) return;
-  state.nodes.forEach(n => n.el.remove());
-  state.nodes = []; state.edges = []; state.selectedId = null;
-  svgLines.querySelectorAll('.conn-line').forEach(e=>e.remove());
-  clearSelection();
-  state.idCounter = 0;
-  initDefault();
-  toast('Mind map direset!');
-};
-
-// Export PNG
-document.getElementById('btn-export').onclick = () => {
-  toast('Export PNG — gunakan browser print / screenshot 📸', 2500);
-};
-
-// ═══════════════════════════════════════════════════════
-//  CANVAS PAN & DRAG
-// ═══════════════════════════════════════════════════════
-wrap.addEventListener('mousedown', e => {
-  if (e.button === 1 || (e.button === 0 && !state.dragging)) {
-    state.panning = true;
-    state.panStart = { x: e.clientX, y: e.clientY };
-    state.panFrom  = { ...state.pan };
-    canvas.classList.add('panning');
-    if (e.button === 0) clearSelection();
-  }
-});
-
-window.addEventListener('mousemove', e => {
-  if (resizing) {
-    const nd = state.nodes.find(n => n.id === resizing.id);
-    const dx = (e.clientX - resizing.sx)/state.zoom;
-    nd.el.style.width = Math.max(100, resizing.ow + dx)+'px';
-    drawEdges();
-    return;
-  }
-  if (state.dragging) {
-    const pos = canvasPos(e);
-    const nd = state.nodes.find(n => n.id === state.dragging);
-    nd.x = pos.x - state.dragOffset.x;
-    nd.y = pos.y - state.dragOffset.y;
-    nd.el.style.left = nd.x+'px';
-    nd.el.style.top  = nd.y+'px';
-    drawEdges(); updateMinimap();
-    return;
-  }
-  if (state.panning) {
-    state.pan.x = state.panFrom.x + (e.clientX - state.panStart.x);
-    state.pan.y = state.panFrom.y + (e.clientY - state.panStart.y);
-    canvas.style.transform = `translate(${state.pan.x}px,${state.pan.y}px) scale(${state.zoom})`;
-    updateMinimap();
-  }
-});
-
-window.addEventListener('mouseup', () => {
-  state.dragging = null; resizing = null;
-  state.panning = false; canvas.classList.remove('panning');
-});
-
-// ═══════════════════════════════════════════════════════
-//  KEYBOARD
-// ═══════════════════════════════════════════════════════
-document.addEventListener('keydown', e => {
-  if (e.target.contentEditable==='true' || e.target.tagName==='INPUT' || e.target.tagName==='TEXTAREA') return;
-  if (e.key === 'n' || e.key === 'N') document.getElementById('btn-add').click();
-  if (e.key === 'l' || e.key === 'L') document.getElementById('btn-link').click();
-  if (e.key === 'Delete' || e.key === 'Backspace') {
-    if (state.selectedId) deleteNode(state.selectedId);
-  }
-  if (e.key === 'Escape') {
-    state.linkMode = false; state.linkFrom = null;
-    document.getElementById('btn-link').classList.remove('active');
-    canvas.classList.remove('linking');
-    clearSelection();
-  }
-});
-
-// ═══════════════════════════════════════════════════════
-//  MINIMAP
-// ═══════════════════════════════════════════════════════
-function updateMinimap() {
-  const mm = document.getElementById('mm-canvas');
-  const ctx = mm.getContext('2d');
-  mm.width = 160; mm.height = 100;
-  ctx.clearRect(0,0,160,100);
-  if (!state.nodes.length) return;
-
-  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
-  state.nodes.forEach(n => {
-    minX=Math.min(minX,n.x); minY=Math.min(minY,n.y);
-    maxX=Math.max(maxX,n.x+150); maxY=Math.max(maxY,n.y+60);
-  });
-  const scx = 150/(maxX-minX||1), scy = 90/(maxY-minY||1);
-  const sc = Math.min(scx,scy);
-
-  // edges
-  state.edges.forEach(edge => {
-    const a=state.nodes.find(n=>n.id===edge.from), b=state.nodes.find(n=>n.id===edge.to);
-    if(!a||!b) return;
-    ctx.strokeStyle='rgba(124,110,245,.4)'; ctx.lineWidth=1;
-    ctx.beginPath();
-    ctx.moveTo((a.x-minX)*sc+5, (a.y-minY)*sc+5);
-    ctx.lineTo((b.x-minX)*sc+5, (b.y-minY)*sc+5);
-    ctx.stroke();
-  });
-
-  // nodes
-  state.nodes.forEach(n => {
-    ctx.fillStyle = hexAlpha(n.color,.7);
-    ctx.beginPath();
-    ctx.roundRect((n.x-minX)*sc+5, (n.y-minY)*sc+5, Math.max(8,70*sc), Math.max(5,30*sc), 3);
-    ctx.fill();
-  });
-}
-
-// ═══════════════════════════════════════════════════════
-//  DEFAULT DATA — contoh mind map "Belajar Efektif"
-// ═══════════════════════════════════════════════════════
-function initDefault() {
-  const cx = 800, cy = 700;
-
-  const root = createNode({ id: uid(), x: cx-70, y: cy-30, label:'🧠 Belajar Efektif', color:'#7c6ef5', isRoot:true, fontSize:15, radius:20, opacity:100 });
-
-  const branches = [
-    { label:'💡 Teknik Belajar', color:'#e86bba', dx:-350, dy:-200,
-      children: ['Pomodoro', 'Active Recall', 'Spaced Rep', 'Mind Map'] },
-    { label:'🏋️ Latihan Soal', color:'#5be6c4', dx:250, dy:-200,
-      children: ['Latihan Harian', 'Simulasi Ujian', 'Flash Card'] },
-    { label:'🌿 Gaya Hidup', color:'#f0b454', dx:-350, dy:200,
-      children: ['Tidur Cukup', 'Olahraga', 'Nutrisi Otak'] },
-    { label:'📚 Sumber Belajar', color:'#60b4ff', dx:250, dy:200,
-      children: ['Buku', 'Video', 'Podcast', 'Artikel'] },
-  ];
-
-  branches.forEach(b => {
-    const bNode = createNode({ id: uid(), x: cx + b.dx, y: cy + b.dy, label: b.label, color: b.color, fontSize:13, radius:14, opacity:100 });
-    addEdge(root.id, bNode.id);
-    b.children.forEach((c, i) => {
-      const spread = (i - (b.children.length-1)/2) * 90;
-      const isLeft = b.dx < 0;
-      const cNode = createNode({
-        id: uid(),
-        x: bNode.x + (isLeft ? -160 : 160),
-        y: bNode.y + spread,
-        label: c, color: b.color, fontSize:12, radius:12, opacity:90
-      });
-      addEdge(bNode.id, cNode.id);
-    });
-  });
-
-  setTimeout(() => {
-    document.getElementById('btn-fit').click();
-  }, 200);
-}
-
-// ═══════════════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════════════
-initDefault();
-updateMinimap();
-</script>
-</body>
-</html>

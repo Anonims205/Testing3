@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuronMap — Mind Map Interaktif</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Sora:wght@300;400;600;700&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a28;
+    --border: #2a2a3f;
+    --text: #e8e8f0;
+    --text-muted: #6b6b8a;
+    --accent: #7c6ef5;
+    --accent2: #e86bba;
+    --accent3: #5be6c4;
+    --accent4: #f0b454;
+    --glow: rgba(124,110,245,0.3);
+    --node-w: 140px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Sora', sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ── TOOLBAR ── */
+  #toolbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: 56px;
+    background: rgba(10,10,15,0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px; padding: 0 16px;
+  }
+  .brand {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700; font-size: 18px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-right: 12px; white-space: nowrap;
+  }
+  .sep { width: 1px; height: 28px; background: var(--border); margin: 0 4px; }
+  .btn {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text-muted); font-family: 'Sora', sans-serif;
+    font-size: 12px; font-weight: 500;
+    padding: 6px 12px; border-radius: 8px; cursor: pointer;
+    transition: all .2s; white-space: nowrap;
+  }
+  .btn:hover { background: var(--surface); color: var(--text); border-color: var(--accent); }
+  .btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn svg { flex-shrink: 0; }
+  .color-pick { display: flex; gap: 6px; align-items: center; margin-left: 4px; }
+  .dot {
+    width: 20px; height: 20px; border-radius: 50%; cursor: pointer;
+    border: 2px solid transparent; transition: all .2s;
+  }
+  .dot:hover, .dot.sel { border-color: #fff; transform: scale(1.2); }
+  #zoom-val {
+    font-size: 12px; color: var(--text-muted);
+    background: var(--surface2); border: 1px solid var(--border);
+    padding: 5px 10px; border-radius: 8px; min-width: 52px; text-align: center;
+  }
+  .spacer { flex: 1; }
+
+  /* ── CANVAS ── */
+  #canvas-wrap {
+    position: fixed; inset: 56px 0 0 0; overflow: hidden;
+  }
+  #canvas {
+    position: absolute; top: 0; left: 0;
+    width: 4000px; height: 3000px;
+    transform-origin: 0 0;
+    cursor: grab;
+  }
+  #canvas.panning { cursor: grabbing; }
+  #canvas.linking { cursor: crosshair; }
+
+  svg#lines {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none; overflow: visible;
+  }
+
+  /* ── NODES ── */
+  .node {
+    position: absolute;
+    min-width: 120px; max-width: 220px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: box-shadow .2s, border-color .2s, transform .15s;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  .node:hover { transform: scale(1.03); }
+  .node.selected {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px var(--glow), 0 4px 24px rgba(0,0,0,.6);
+  }
+  .node.root {
+    border-radius: 20px;
+    padding: 14px 20px;
+    font-size: 16px; font-weight: 700;
+  }
+  .node-label {
+    font-size: 13px; font-weight: 500;
+    line-height: 1.4; word-break: break-word;
+    outline: none; min-width: 1px;
+    color: var(--text);
+  }
+  .node-label:empty::before { content: attr(data-ph); color: var(--text-muted); }
+  .node-emoji { font-size: 20px; margin-bottom: 4px; display: block; }
+  .node-tag {
+    display: inline-block; margin-top: 6px;
+    font-size: 10px; padding: 2px 8px; border-radius: 20px;
+    background: rgba(255,255,255,0.08); color: var(--text-muted);
+  }
+
+  /* node resize handle */
+  .resize-h {
+    position: absolute; bottom: 4px; right: 4px;
+    width: 12px; height: 12px; cursor: se-resize;
+    opacity: 0; transition: opacity .2s;
+  }
+  .node:hover .resize-h { opacity: .5; }
+  .resize-h::after {
+    content: '';
+    position: absolute; bottom: 0; right: 0;
+    width: 8px; height: 8px;
+    border-right: 2px solid var(--text-muted);
+    border-bottom: 2px solid var(--text-muted);
+    border-radius: 1px;
+  }
+
+  /* ── LINK PREVIEW ── */
+  #link-line {
+    position: absolute; pointer-events: none;
+    top:0;left:0;width:100%;height:100%;
+    overflow: visible;
+  }
+
+  /* ── CONTEXT MENU ── */
+  #ctx-menu {
+    position: fixed; z-index: 200;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 6px;
+    min-width: 180px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.6);
+    display: none;
+  }
+  #ctx-menu.show { display: block; }
+  .ctx-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; border-radius: 8px;
+    font-size: 13px; cursor: pointer; color: var(--text-muted);
+    transition: all .15s;
+  }
+  .ctx-item:hover { background: var(--surface2); color: var(--text); }
+  .ctx-item.danger:hover { background: rgba(255,80,80,.1); color: #ff6060; }
+  .ctx-sep { height: 1px; background: var(--border); margin: 4px 0; }
+
+  /* ── SIDE PANEL ── */
+  #panel {
+    position: fixed; right: -300px; top: 56px; bottom: 0; width: 280px;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    padding: 20px 16px;
+    transition: right .3s cubic-bezier(.4,0,.2,1);
+    overflow-y: auto; z-index: 90;
+  }
+  #panel.open { right: 0; }
+  .panel-title { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 12px; }
+  .panel-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .panel-label { font-size: 12px; color: var(--text-muted); min-width: 60px; }
+  input[type=text], input[type=range], select, textarea {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); font-family: 'Sora', sans-serif; font-size: 12px;
+    border-radius: 8px; outline: none;
+  }
+  input[type=text], select { padding: 6px 10px; width: 100%; }
+  input[type=text]:focus, select:focus { border-color: var(--accent); }
+  textarea { padding: 8px 10px; width: 100%; resize: vertical; min-height: 60px; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .color-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .c-swatch {
+    width: 26px; height: 26px; border-radius: 8px; cursor: pointer;
+    border: 2px solid transparent; transition: all .15s; flex-shrink: 0;
+  }
+  .c-swatch.active { border-color: #fff; }
+
+  /* ── MINI MAP ── */
+  #minimap {
+    position: fixed; bottom: 16px; right: 16px; z-index: 90;
+    width: 160px; height: 100px;
+    background: rgba(10,10,15,.85);
+    border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden;
+    backdrop-filter: blur(10px);
+  }
+  #minimap canvas { width: 100%; height: 100%; }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 130px; left: 50%; transform: translateX(-50%);
+    background: var(--accent); color: #fff;
+    padding: 8px 20px; border-radius: 20px;
+    font-size: 13px; font-weight: 500;
+    opacity: 0; pointer-events: none; transition: opacity .3s;
+    white-space: nowrap; z-index: 300;
+  }
+  #toast.show { opacity: 1; }
+
+  /* ── HELP ── */
+  #help {
+    position: fixed; bottom: 16px; left: 16px; z-index: 90;
+    background: rgba(10,10,15,.85); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 14px;
+    font-size: 11px; color: var(--text-muted); line-height: 1.8;
+    backdrop-filter: blur(10px);
+  }
+  kbd {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1px 5px; font-size: 10px;
+  }
+
+  /* Animated SVG lines */
+  .conn-line {
+    fill: none; stroke-width: 2;
+    stroke-linecap: round; stroke-linejoin: round;
+    opacity: .7;
+    stroke-dasharray: 1000; stroke-dashoffset: 1000;
+    animation: drawLine .6s ease forwards;
+  }
+  @keyframes drawLine { to { stroke-dashoffset: 0; } }
+
+  .node-enter { animation: nodeIn .25s cubic-bezier(.34,1.56,.64,1) forwards; }
+  @keyframes nodeIn { from { opacity:0; transform: scale(.6); } to { opacity:1; transform: scale(1); } }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- TOOLBAR -->
+<div id="toolbar">
+  <span class="brand">⬡ NeuronMap</span>
+  <div class="sep"></div>
+  <button class="btn" id="btn-add" title="Tambah Node (N)">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    Node
+  </button>
+  <button class="btn" id="btn-link" title="Mode Hubungkan (L)">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+    Hubungkan
+  </button>
+  <button class="btn" id="btn-del" title="Hapus Pilihan (Del)">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6l-1 14H6L5 6M9 6V4h6v2"/></svg>
+    Hapus
+  </button>
+  <div class="sep"></div>
+  <button class="btn" id="btn-auto" title="Auto Layout">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+    Auto Layout
+  </button>
+  <button class="btn" id="btn-fit">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+    Fit
+  </button>
+  <div class="sep"></div>
+  <button class="btn" id="btn-zoom-out">－</button>
+  <span id="zoom-val">100%</span>
+  <button class="btn" id="btn-zoom-in">＋</button>
+  <div class="sep"></div>
+  <div class="color-pick" title="Warna node baru">
+    <span style="font-size:11px;color:var(--text-muted);">Warna:</span>
+    <div class="dot sel" style="background:#7c6ef5" data-c="#7c6ef5"></div>
+    <div class="dot" style="background:#e86bba" data-c="#e86bba"></div>
+    <div class="dot" style="background:#5be6c4" data-c="#5be6c4"></div>
+    <div class="dot" style="background:#f0b454" data-c="#f0b454"></div>
+    <div class="dot" style="background:#ff7070" data-c="#ff7070"></div>
+    <div class="dot" style="background:#60b4ff" data-c="#60b4ff"></div>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn" id="btn-panel">✦ Edit Panel</button>
+  <button class="btn" id="btn-export">⬇ Export PNG</button>
+  <button class="btn" id="btn-clear">↺ Reset</button>
+</div>
+
+<!-- CANVAS -->
+<div id="canvas-wrap">
+  <div id="canvas">
+    <svg id="lines" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="glow-filter">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+    </svg>
+  </div>
+</div>
+
+<!-- SIDE PANEL -->
+<div id="panel">
+  <div class="panel-title">✦ Edit Node</div>
+  <div id="panel-empty" style="color:var(--text-muted);font-size:12px;margin-top:8px;">Pilih node untuk mengedit</div>
+  <div id="panel-form" style="display:none;">
+    <div class="panel-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+      <div class="panel-label">Label</div>
+      <input type="text" id="p-label" placeholder="Judul node...">
+    </div>
+    <div class="panel-row" style="flex-direction:column;align-items:flex-start;gap:6px;margin-top:6px;">
+      <div class="panel-label">Catatan</div>
+      <textarea id="p-note" placeholder="Catatan / detail..."></textarea>
+    </div>
+    <div class="panel-row" style="flex-direction:column;align-items:flex-start;gap:6px;margin-top:6px;">
+      <div class="panel-label">Emoji</div>
+      <input type="text" id="p-emoji" placeholder="🧠" style="width:60px;">
+    </div>
+    <div class="panel-row" style="flex-direction:column;align-items:flex-start;gap:6px;margin-top:6px;">
+      <div class="panel-label">Tag</div>
+      <input type="text" id="p-tag" placeholder="e.g. Penting">
+    </div>
+    <div style="margin-top:12px;">
+      <div class="panel-title">Warna Node</div>
+      <div class="color-row" id="p-colors"></div>
+    </div>
+    <div style="margin-top:12px;">
+      <div class="panel-title">Ukuran Font</div>
+      <div class="panel-row">
+        <input type="range" id="p-fontsize" min="10" max="22" value="13" style="flex:1;">
+        <span id="p-fontsize-val" style="font-size:12px;color:var(--text-muted);min-width:28px;">13px</span>
+      </div>
+    </div>
+    <div style="margin-top:12px;">
+      <div class="panel-title">Border Radius</div>
+      <div class="panel-row">
+        <input type="range" id="p-radius" min="4" max="40" value="16" style="flex:1;">
+        <span id="p-radius-val" style="font-size:12px;color:var(--text-muted);min-width:28px;">16px</span>
+      </div>
+    </div>
+    <div style="margin-top:12px;">
+      <div class="panel-title">Opasitas</div>
+      <div class="panel-row">
+        <input type="range" id="p-opacity" min="30" max="100" value="100" style="flex:1;">
+        <span id="p-opacity-val" style="font-size:12px;color:var(--text-muted);min-width:28px;">100%</span>
+      </div>
+    </div>
+    <button class="btn active" id="p-apply" style="width:100%;justify-content:center;margin-top:16px;">Terapkan</button>
+  </div>
+</div>
+
+<!-- CONTEXT MENU -->
+<div id="ctx-menu">
+  <div class="ctx-item" id="ctx-add-child">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    Tambah Cabang
+  </div>
+  <div class="ctx-item" id="ctx-dupe">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+    Duplikat
+  </div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" id="ctx-edit">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    Edit Label
+  </div>
+  <div class="ctx-item danger" id="ctx-del">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6l-1 14H6L5 6M9 6V4h6v2"/></svg>
+    Hapus Node
+  </div>
+</div>
+
+<!-- MINIMAP -->
+<div id="minimap"><canvas id="mm-canvas"></canvas></div>
+
+<!-- TOAST -->
+<div id="toast">Node ditambahkan!</div>
+
+<!-- HELP -->
+<div id="help">
+  <b style="color:var(--text);font-size:12px;">Pintasan</b><br>
+  <kbd>N</kbd> Node baru &nbsp; <kbd>L</kbd> Mode link<br>
+  <kbd>Del</kbd> Hapus &nbsp; <kbd>Esc</kbd> Batal<br>
+  <kbd>Scroll</kbd> Zoom &nbsp; <kbd>Drag</kbd> Pindah<br>
+  <kbd>Dbl-click</kbd> Edit label
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
+const state = {
+  nodes: [],
+  edges: [],
+  selectedId: null,
+  linkMode: false,
+  linkFrom: null,
+  pan: { x: 0, y: 0 },
+  zoom: 1,
+  dragging: null,
+  dragOffset: { x: 0, y: 0 },
+  panning: false,
+  panStart: null,
+  panFrom: null,
+  activeColor: '#7c6ef5',
+  idCounter: 0,
+};
+
+const COLORS = ['#7c6ef5','#e86bba','#5be6c4','#f0b454','#ff7070','#60b4ff','#a8ff78','#ff9f43'];
+
+const canvas = document.getElementById('canvas');
+const svgLines = document.getElementById('lines');
+const wrap = document.getElementById('canvas-wrap');
+
+// ═══════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════
+function uid() { return 'n' + (++state.idCounter); }
+
+function toast(msg, dur=1800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), dur);
+}
+
+function hexAlpha(hex, a) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+// ═══════════════════════════════════════════════════════
+//  NODE CREATION
+// ═══════════════════════════════════════════════════════
+function createNode({ id, x, y, label, color, emoji='', note='', tag='', fontSize=13, radius=16, opacity=100, isRoot=false }) {
+  const el = document.createElement('div');
+  el.className = 'node node-enter' + (isRoot ? ' root' : '');
+  el.id = id;
+  el.style.left = x + 'px';
+  el.style.top  = y + 'px';
+  el.style.borderColor = hexAlpha(color, .5);
+  el.style.background = hexAlpha(color, .12);
+  el.style.borderRadius = radius + 'px';
+  el.style.opacity = opacity/100;
+  el.style.boxShadow = `0 0 20px ${hexAlpha(color,.15)}, 0 4px 20px rgba(0,0,0,.5)`;
+
+  const rh = document.createElement('div');
+  rh.className = 'resize-h'; el.appendChild(rh);
+
+  if (emoji) {
+    const em = document.createElement('span');
+    em.className = 'node-emoji'; em.textContent = emoji;
+    el.appendChild(em);
+  }
+  const lbl = document.createElement('div');
+  lbl.className = 'node-label';
+  lbl.dataset.ph = 'Klik untuk edit...';
+  lbl.contentEditable = 'false';
+  lbl.style.fontSize = fontSize + 'px';
+  lbl.textContent = label;
+  el.appendChild(lbl);
+
+  if (tag) {
+    const tg = document.createElement('span');
+    tg.className = 'node-tag'; tg.textContent = tag;
+    el.appendChild(tg);
+  }
+
+  canvas.appendChild(el);
+
+  const nodeData = { id, x, y, label, color, emoji, note, tag, fontSize, radius, opacity, isRoot, el };
+  state.nodes.push(nodeData);
+
+  // Events
+  el.addEventListener('mousedown', e => onNodeMouseDown(e, id));
+  el.addEventListener('dblclick', e => { e.stopPropagation(); startEditLabel(id); });
+  el.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); showCtxMenu(e, id); });
+
+  // Resize handle
+  rh.addEventListener('mousedown', e => { e.stopPropagation(); startResize(e, id); });
+
+  return nodeData;
+}
+
+function startEditLabel(id) {
+  const nd = state.nodes.find(n => n.id === id);
+  if (!nd) return;
+  const lbl = nd.el.querySelector('.node-label');
+  lbl.contentEditable = 'true';
+  lbl.focus();
+  const r = document.createRange(); r.selectNodeContents(lbl);
+  const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+  const done = () => {
+    lbl.contentEditable = 'false';
+    nd.label = lbl.textContent.trim() || nd.label;
+    lbl.textContent = nd.label;
+    updatePanel(id);
+  };
+  lbl.addEventListener('blur', done, { once: true });
+  lbl.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); lbl.blur(); } });
+}
+
+// ═══════════════════════════════════════════════════════
+//  EDGES
+// ═══════════════════════════════════════════════════════
+function drawEdges() {
+  // clear old
+  svgLines.querySelectorAll('.conn-line').forEach(e => e.remove());
+  state.edges.forEach(edge => {
+    const a = state.nodes.find(n => n.id === edge.from);
+    const b = state.nodes.find(n => n.id === edge.to);
+    if (!a || !b) return;
+    const ax = a.x + a.el.offsetWidth/2, ay = a.y + a.el.offsetHeight/2;
+    const bx = b.x + b.el.offsetWidth/2, by = b.y + b.el.offsetHeight/2;
+    const dx = bx - ax, dy = by - ay;
+    const cx1 = ax + dx*0.45, cy1 = ay;
+    const cx2 = bx - dx*0.45, cy2 = by;
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.classList.add('conn-line');
+    path.setAttribute('d', `M${ax},${ay} C${cx1},${cy1} ${cx2},${cy2} ${bx},${by}`);
+    const col = a.color || '#7c6ef5';
+    path.setAttribute('stroke', col);
+    path.setAttribute('filter', 'url(#glow-filter)');
+    path.style.animationDelay = '0s';
+    svgLines.appendChild(path);
+  });
+}
+
+function addEdge(from, to) {
+  if (from === to) return;
+  if (state.edges.find(e => (e.from===from&&e.to===to)||(e.from===to&&e.to===from))) return;
+  state.edges.push({ from, to });
+  drawEdges();
+}
+
+function removeEdgesOf(id) {
+  state.edges = state.edges.filter(e => e.from !== id && e.to !== id);
+  drawEdges();
+}
+
+// ═══════════════════════════════════════════════════════
+//  DRAG NODE
+// ═══════════════════════════════════════════════════════
+function onNodeMouseDown(e, id) {
+  if (e.button !== 0) return;
+  e.stopPropagation();
+
+  selectNode(id);
+
+  if (state.linkMode) {
+    if (!state.linkFrom) {
+      state.linkFrom = id;
+      toast('Klik node tujuan untuk menghubungkan…', 2000);
+    } else {
+      addEdge(state.linkFrom, id);
+      state.linkFrom = null;
+      toast('Koneksi dibuat! ✓');
+    }
+    return;
+  }
+
+  const nd = state.nodes.find(n => n.id === id);
+  const pos = canvasPos(e);
+  state.dragging = id;
+  state.dragOffset = { x: pos.x - nd.x, y: pos.y - nd.y };
+}
+
+function canvasPos(e) {
+  return {
+    x: (e.clientX - wrap.getBoundingClientRect().left - state.pan.x) / state.zoom,
+    y: (e.clientY - wrap.getBoundingClientRect().top  - state.pan.y) / state.zoom,
+  };
+}
+
+// ═══════════════════════════════════════════════════════
+//  RESIZE
+// ═══════════════════════════════════════════════════════
+let resizing = null;
+function startResize(e, id) {
+  resizing = { id, sx: e.clientX, sy: e.clientY };
+  const nd = state.nodes.find(n => n.id === id);
+  resizing.ow = nd.el.offsetWidth;
+  resizing.oh = nd.el.offsetHeight;
+}
+
+// ═══════════════════════════════════════════════════════
+//  SELECTION
+// ═══════════════════════════════════════════════════════
+function selectNode(id) {
+  state.selectedId = id;
+  state.nodes.forEach(n => n.el.classList.toggle('selected', n.id === id));
+  updatePanel(id);
+}
+
+function clearSelection() {
+  state.selectedId = null;
+  state.nodes.forEach(n => n.el.classList.remove('selected'));
+  document.getElementById('panel-form').style.display = 'none';
+  document.getElementById('panel-empty').style.display = 'block';
+}
+
+// ═══════════════════════════════════════════════════════
+//  PANEL
+// ═══════════════════════════════════════════════════════
+function updatePanel(id) {
+  const nd = state.nodes.find(n => n.id === id);
+  if (!nd) return;
+  document.getElementById('panel-empty').style.display = 'none';
+  document.getElementById('panel-form').style.display = 'block';
+  document.getElementById('p-label').value = nd.label;
+  document.getElementById('p-note').value = nd.note || '';
+  document.getElementById('p-emoji').value = nd.emoji || '';
+  document.getElementById('p-tag').value = nd.tag || '';
+  document.getElementById('p-fontsize').value = nd.fontSize || 13;
+  document.getElementById('p-fontsize-val').textContent = (nd.fontSize||13) + 'px';
+  document.getElementById('p-radius').value = nd.radius || 16;
+  document.getElementById('p-radius-val').textContent = (nd.radius||16) + 'px';
+  document.getElementById('p-opacity').value = nd.opacity || 100;
+  document.getElementById('p-opacity-val').textContent = (nd.opacity||100) + '%';
+  // color swatches
+  const pr = document.getElementById('p-colors');
+  pr.innerHTML = '';
+  COLORS.forEach(c => {
+    const s = document.createElement('div');
+    s.className = 'c-swatch' + (c === nd.color ? ' active' : '');
+    s.style.background = c;
+    s.dataset.color = c;
+    s.onclick = () => { pr.querySelectorAll('.c-swatch').forEach(x=>x.classList.remove('active')); s.classList.add('active'); };
+    pr.appendChild(s);
+  });
+}
+
+document.getElementById('p-fontsize').oninput = function() {
+  document.getElementById('p-fontsize-val').textContent = this.value+'px';
+};
+document.getElementById('p-radius').oninput = function() {
+  document.getElementById('p-radius-val').textContent = this.value+'px';
+};
+document.getElementById('p-opacity').oninput = function() {
+  document.getElementById('p-opacity-val').textContent = this.value+'%';
+};
+
+document.getElementById('p-apply').onclick = () => {
+  const id = state.selectedId; if (!id) return;
+  const nd = state.nodes.find(n => n.id === id); if (!nd) return;
+  const newLabel = document.getElementById('p-label').value.trim() || nd.label;
+  const newColor = document.querySelector('#p-colors .c-swatch.active')?.dataset.color || nd.color;
+  const newEmoji = document.getElementById('p-emoji').value.trim();
+  const newNote  = document.getElementById('p-note').value;
+  const newTag   = document.getElementById('p-tag').value.trim();
+  const newFs    = +document.getElementById('p-fontsize').value;
+  const newRad   = +document.getElementById('p-radius').value;
+  const newOp    = +document.getElementById('p-opacity').value;
+
+  nd.label = newLabel; nd.color = newColor; nd.emoji = newEmoji;
+  nd.note = newNote; nd.tag = newTag; nd.fontSize = newFs;
+  nd.radius = newRad; nd.opacity = newOp;
+
+  // Re-render the node element
+  const el = nd.el;
+  el.style.borderColor = hexAlpha(newColor,.5);
+  el.style.background  = hexAlpha(newColor,.12);
+  el.style.borderRadius = newRad+'px';
+  el.style.opacity = newOp/100;
+  el.style.boxShadow = `0 0 20px ${hexAlpha(newColor,.15)}, 0 4px 20px rgba(0,0,0,.5)`;
+
+  // Rebuild inner content
+  while (el.firstChild) el.removeChild(el.firstChild);
+  const rh = document.createElement('div'); rh.className='resize-h'; el.appendChild(rh);
+  rh.addEventListener('mousedown', e => { e.stopPropagation(); startResize(e, id); });
+
+  if (newEmoji) {
+    const em = document.createElement('span'); em.className='node-emoji'; em.textContent=newEmoji; el.appendChild(em);
+  }
+  const lbl = document.createElement('div');
+  lbl.className='node-label'; lbl.dataset.ph='Klik untuk edit...';
+  lbl.contentEditable='false'; lbl.style.fontSize=newFs+'px';
+  lbl.textContent=newLabel; el.appendChild(lbl);
+
+  if (newTag) {
+    const tg = document.createElement('span'); tg.className='node-tag'; tg.textContent=newTag; el.appendChild(tg);
+  }
+  el.addEventListener('dblclick', e => { e.stopPropagation(); startEditLabel(id); });
+
+  drawEdges();
+  toast('Node diperbarui ✓');
+};
+
+// ═══════════════════════════════════════════════════════
+//  CONTEXT MENU
+// ═══════════════════════════════════════════════════════
+let ctxNodeId = null;
+function showCtxMenu(e, id) {
+  ctxNodeId = id;
+  selectNode(id);
+  const m = document.getElementById('ctx-menu');
+  m.style.left = e.clientX + 'px';
+  m.style.top  = e.clientY + 'px';
+  m.classList.add('show');
+}
+document.addEventListener('click', () => document.getElementById('ctx-menu').classList.remove('show'));
+
+document.getElementById('ctx-add-child').onclick = () => {
+  if (!ctxNodeId) return;
+  const parent = state.nodes.find(n => n.id === ctxNodeId);
+  const id = uid();
+  const child = createNode({ id, x: parent.x+180, y: parent.y+50, label:'Cabang Baru', color: state.activeColor });
+  addEdge(ctxNodeId, id);
+  selectNode(id);
+  toast('Cabang ditambahkan!');
+};
+
+document.getElementById('ctx-dupe').onclick = () => {
+  if (!ctxNodeId) return;
+  const src = state.nodes.find(n => n.id === ctxNodeId);
+  const id = uid();
+  createNode({ ...src, id, x: src.x+30, y: src.y+30 });
+  toast('Node diduplikat!');
+};
+
+document.getElementById('ctx-edit').onclick = () => {
+  if (ctxNodeId) startEditLabel(ctxNodeId);
+};
+
+document.getElementById('ctx-del').onclick = () => {
+  deleteNode(ctxNodeId);
+};
+
+function deleteNode(id) {
+  const nd = state.nodes.find(n => n.id === id);
+  if (!nd) return;
+  nd.el.remove();
+  state.nodes = state.nodes.filter(n => n.id !== id);
+  removeEdgesOf(id);
+  clearSelection();
+  toast('Node dihapus');
+}
+
+// ═══════════════════════════════════════════════════════
+//  TOOLBAR BUTTONS
+// ═══════════════════════════════════════════════════════
+document.getElementById('btn-add').onclick = () => {
+  const id = uid();
+  const cx = (wrap.clientWidth/2 - state.pan.x) / state.zoom;
+  const cy = (wrap.clientHeight/2 - state.pan.y) / state.zoom;
+  createNode({ id, x: cx - 70 + Math.random()*60-30, y: cy - 30 + Math.random()*60-30, label:'Node Baru', color: state.activeColor });
+  selectNode(id);
+  toast('Node baru ditambahkan!');
+};
+
+document.getElementById('btn-link').onclick = function() {
+  state.linkMode = !state.linkMode;
+  state.linkFrom = null;
+  this.classList.toggle('active', state.linkMode);
+  canvas.classList.toggle('linking', state.linkMode);
+  toast(state.linkMode ? 'Mode Link Aktif — klik 2 node' : 'Mode Link Nonaktif');
+};
+
+document.getElementById('btn-del').onclick = () => {
+  if (state.selectedId) deleteNode(state.selectedId);
+};
+
+document.getElementById('btn-panel').onclick = function() {
+  document.getElementById('panel').classList.toggle('open');
+  this.classList.toggle('active');
+};
+
+// Color dots toolbar
+document.querySelectorAll('#toolbar .dot').forEach(d => {
+  d.onclick = () => {
+    document.querySelectorAll('#toolbar .dot').forEach(x=>x.classList.remove('sel'));
+    d.classList.add('sel');
+    state.activeColor = d.dataset.c;
+  };
+});
+
+// Zoom
+function setZoom(z) {
+  state.zoom = Math.max(0.2, Math.min(2.5, z));
+  canvas.style.transform = `translate(${state.pan.x}px,${state.pan.y}px) scale(${state.zoom})`;
+  document.getElementById('zoom-val').textContent = Math.round(state.zoom*100)+'%';
+  drawEdges();
+  updateMinimap();
+}
+document.getElementById('btn-zoom-in').onclick = () => setZoom(state.zoom + .15);
+document.getElementById('btn-zoom-out').onclick = () => setZoom(state.zoom - .15);
+
+wrap.addEventListener('wheel', e => {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? -0.08 : 0.08;
+  setZoom(state.zoom + delta);
+}, { passive: false });
+
+// Fit
+document.getElementById('btn-fit').onclick = () => {
+  if (!state.nodes.length) return;
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  state.nodes.forEach(n => {
+    minX = Math.min(minX, n.x); minY = Math.min(minY, n.y);
+    maxX = Math.max(maxX, n.x + n.el.offsetWidth);
+    maxY = Math.max(maxY, n.y + n.el.offsetHeight);
+  });
+  const pw = wrap.clientWidth, ph = wrap.clientHeight;
+  const mw = maxX - minX + 80, mh = maxY - minY + 80;
+  const nz = Math.min(pw/mw, ph/mh, 1.5);
+  state.zoom = nz;
+  state.pan.x = (pw - mw*nz)/2 - minX*nz + 40*nz;
+  state.pan.y = (ph - mh*nz)/2 - minY*nz + 40*nz;
+  canvas.style.transform = `translate(${state.pan.x}px,${state.pan.y}px) scale(${state.zoom})`;
+  document.getElementById('zoom-val').textContent = Math.round(nz*100)+'%';
+  drawEdges(); updateMinimap();
+};
+
+// Auto Layout (radial)
+document.getElementById('btn-auto').onclick = () => {
+  if (!state.nodes.length) return;
+  const root = state.nodes[0];
+  const cx = 1000, cy = 900;
+  root.x = cx; root.y = cy;
+  root.el.style.left = cx+'px'; root.el.style.top = cy+'px';
+  const rest = state.nodes.slice(1);
+  rest.forEach((n, i) => {
+    const angle = (i / rest.length) * Math.PI * 2 - Math.PI/2;
+    const r = 300 + (i%3)*80;
+    n.x = cx + Math.cos(angle)*r; n.y = cy + Math.sin(angle)*r;
+    n.el.style.left = n.x+'px'; n.el.style.top = n.y+'px';
+  });
+  drawEdges();
+  document.getElementById('btn-fit').click();
+  toast('Layout otomatis diterapkan!');
+};
+
+// Reset
+document.getElementById('btn-clear').onclick = () => {
+  if (!confirm('Reset semua? Peta akan dihapus.')) return;
+  state.nodes.forEach(n => n.el.remove());
+  state.nodes = []; state.edges = []; state.selectedId = null;
+  svgLines.querySelectorAll('.conn-line').forEach(e=>e.remove());
+  clearSelection();
+  state.idCounter = 0;
+  initDefault();
+  toast('Mind map direset!');
+};
+
+// Export PNG
+document.getElementById('btn-export').onclick = () => {
+  toast('Export PNG — gunakan browser print / screenshot 📸', 2500);
+};
+
+// ═══════════════════════════════════════════════════════
+//  CANVAS PAN & DRAG
+// ═══════════════════════════════════════════════════════
+wrap.addEventListener('mousedown', e => {
+  if (e.button === 1 || (e.button === 0 && !state.dragging)) {
+    state.panning = true;
+    state.panStart = { x: e.clientX, y: e.clientY };
+    state.panFrom  = { ...state.pan };
+    canvas.classList.add('panning');
+    if (e.button === 0) clearSelection();
+  }
+});
+
+window.addEventListener('mousemove', e => {
+  if (resizing) {
+    const nd = state.nodes.find(n => n.id === resizing.id);
+    const dx = (e.clientX - resizing.sx)/state.zoom;
+    nd.el.style.width = Math.max(100, resizing.ow + dx)+'px';
+    drawEdges();
+    return;
+  }
+  if (state.dragging) {
+    const pos = canvasPos(e);
+    const nd = state.nodes.find(n => n.id === state.dragging);
+    nd.x = pos.x - state.dragOffset.x;
+    nd.y = pos.y - state.dragOffset.y;
+    nd.el.style.left = nd.x+'px';
+    nd.el.style.top  = nd.y+'px';
+    drawEdges(); updateMinimap();
+    return;
+  }
+  if (state.panning) {
+    state.pan.x = state.panFrom.x + (e.clientX - state.panStart.x);
+    state.pan.y = state.panFrom.y + (e.clientY - state.panStart.y);
+    canvas.style.transform = `translate(${state.pan.x}px,${state.pan.y}px) scale(${state.zoom})`;
+    updateMinimap();
+  }
+});
+
+window.addEventListener('mouseup', () => {
+  state.dragging = null; resizing = null;
+  state.panning = false; canvas.classList.remove('panning');
+});
+
+// ═══════════════════════════════════════════════════════
+//  KEYBOARD
+// ═══════════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (e.target.contentEditable==='true' || e.target.tagName==='INPUT' || e.target.tagName==='TEXTAREA') return;
+  if (e.key === 'n' || e.key === 'N') document.getElementById('btn-add').click();
+  if (e.key === 'l' || e.key === 'L') document.getElementById('btn-link').click();
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    if (state.selectedId) deleteNode(state.selectedId);
+  }
+  if (e.key === 'Escape') {
+    state.linkMode = false; state.linkFrom = null;
+    document.getElementById('btn-link').classList.remove('active');
+    canvas.classList.remove('linking');
+    clearSelection();
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+//  MINIMAP
+// ═══════════════════════════════════════════════════════
+function updateMinimap() {
+  const mm = document.getElementById('mm-canvas');
+  const ctx = mm.getContext('2d');
+  mm.width = 160; mm.height = 100;
+  ctx.clearRect(0,0,160,100);
+  if (!state.nodes.length) return;
+
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  state.nodes.forEach(n => {
+    minX=Math.min(minX,n.x); minY=Math.min(minY,n.y);
+    maxX=Math.max(maxX,n.x+150); maxY=Math.max(maxY,n.y+60);
+  });
+  const scx = 150/(maxX-minX||1), scy = 90/(maxY-minY||1);
+  const sc = Math.min(scx,scy);
+
+  // edges
+  state.edges.forEach(edge => {
+    const a=state.nodes.find(n=>n.id===edge.from), b=state.nodes.find(n=>n.id===edge.to);
+    if(!a||!b) return;
+    ctx.strokeStyle='rgba(124,110,245,.4)'; ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo((a.x-minX)*sc+5, (a.y-minY)*sc+5);
+    ctx.lineTo((b.x-minX)*sc+5, (b.y-minY)*sc+5);
+    ctx.stroke();
+  });
+
+  // nodes
+  state.nodes.forEach(n => {
+    ctx.fillStyle = hexAlpha(n.color,.7);
+    ctx.beginPath();
+    ctx.roundRect((n.x-minX)*sc+5, (n.y-minY)*sc+5, Math.max(8,70*sc), Math.max(5,30*sc), 3);
+    ctx.fill();
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  DEFAULT DATA — contoh mind map "Belajar Efektif"
+// ═══════════════════════════════════════════════════════
+function initDefault() {
+  const cx = 800, cy = 700;
+
+  const root = createNode({ id: uid(), x: cx-70, y: cy-30, label:'🧠 Belajar Efektif', color:'#7c6ef5', isRoot:true, fontSize:15, radius:20, opacity:100 });
+
+  const branches = [
+    { label:'💡 Teknik Belajar', color:'#e86bba', dx:-350, dy:-200,
+      children: ['Pomodoro', 'Active Recall', 'Spaced Rep', 'Mind Map'] },
+    { label:'🏋️ Latihan Soal', color:'#5be6c4', dx:250, dy:-200,
+      children: ['Latihan Harian', 'Simulasi Ujian', 'Flash Card'] },
+    { label:'🌿 Gaya Hidup', color:'#f0b454', dx:-350, dy:200,
+      children: ['Tidur Cukup', 'Olahraga', 'Nutrisi Otak'] },
+    { label:'📚 Sumber Belajar', color:'#60b4ff', dx:250, dy:200,
+      children: ['Buku', 'Video', 'Podcast', 'Artikel'] },
+  ];
+
+  branches.forEach(b => {
+    const bNode = createNode({ id: uid(), x: cx + b.dx, y: cy + b.dy, label: b.label, color: b.color, fontSize:13, radius:14, opacity:100 });
+    addEdge(root.id, bNode.id);
+    b.children.forEach((c, i) => {
+      const spread = (i - (b.children.length-1)/2) * 90;
+      const isLeft = b.dx < 0;
+      const cNode = createNode({
+        id: uid(),
+        x: bNode.x + (isLeft ? -160 : 160),
+        y: bNode.y + spread,
+        label: c, color: b.color, fontSize:12, radius:12, opacity:90
+      });
+      addEdge(bNode.id, cNode.id);
+    });
+  });
+
+  setTimeout(() => {
+    document.getElementById('btn-fit').click();
+  }, 200);
+}
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+initDefault();
+updateMinimap();
+</script>
+</body>
+</html>
